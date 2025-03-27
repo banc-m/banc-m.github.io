@@ -1,6 +1,6 @@
 <template>
     <div class="my-5">
-        <img src="./../assets/m11t.jpg" alt="logo" class="logo m-auto d-block shadow border" />
+        <img src="./../assets/nuxmo.jpg" alt="logo" class="logo m-auto d-block shadow border" />
     </div>
 </template>
 
