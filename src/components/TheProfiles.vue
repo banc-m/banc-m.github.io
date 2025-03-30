@@ -1,5 +1,5 @@
 <template>
-    <div class="profiles mx-auto mb-4">
+    <div class="profiles mx-auto">
         <span v-for="profile in profiles" :key="profile.text">
             <a :href="profile.url" class="mx-3">
                 <span :class="'fa fa-' + profile.icon"></span>
@@ -11,7 +11,7 @@
 
 <script>
 export default {
-	name: 'Profiles',
+	name: 'TheProfiles',
 	data () {
 		return {
 			profiles: [

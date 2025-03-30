@@ -1,5 +1,5 @@
 <template>
-	<div class="projects m-auto">
+	<div class="projects mx-auto text-center">
 		<span v-for="project in projects" :key="project.text" class="px-1 px-md-2 d-inline-block py-1">
 			<a :href="project.url">
 				<img :src="project.img" alt="icon" aria-hidden="true" :class="{'rounded': project.rounded}" />
@@ -11,7 +11,7 @@
 
 <script>
 export default {
-	name: 'Projects',
+	name: 'TheProjects',
 	data () {
 		return {
 			projects: [
@@ -39,7 +39,7 @@ export default {
 				{
 					text: 'Safe Plants for Cats',
 					url: '/safe-plants-for-cats',
-					img: new URL('./../assets/safe-plants-for-cats.png', import.meta.url).href
+					img: new URL('./../assets/safe-plants-for-cats-fff.png', import.meta.url).href
 				},
 				{
 					text: 'Gifstori',

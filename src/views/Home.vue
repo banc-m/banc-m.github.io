@@ -1,30 +1,22 @@
 <template>
-	<main class="row h-100 align-items-center">
-		<div class="wrapper">
-			<div class="col-12">
-				<Avatar />
-			</div>
-			<div class="col-12 text-center">
-				<Profiles />
-			</div>
-			<div class="col-12 text-center mb-5 mt-5">
-				<Projects />
-			</div>
-		</div>
+	<main class="d-flex flex-column h-100 py-4">
+        <TheProfiles />
+        <TheAvatar />
+        <TheProjects />
 	</main>
 </template>
 
 <script>
-import Avatar from '@/components/Avatar.vue'
-import Projects from '@/components/Projects.vue'
-import Profiles from '@/components/Profiles.vue'
+import TheAvatar from '@/components/TheLogo.vue'
+import TheProjects from '@/components/TheProjects.vue'
+import TheProfiles from '@/components/TheProfiles.vue'
 
 export default {
 	name: 'HomePage',
 	components: {
-		Avatar,
-		Projects,
-		Profiles
+		TheAvatar,
+		TheProjects,
+		TheProfiles
 	}
 }
 </script>

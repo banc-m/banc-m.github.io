@@ -17,7 +17,7 @@ export default {
 <style lang="scss">
 body {
 	color: #232323;
-	background: white url("./assets/triangles.png");
+	background: white url("./assets/triangles-inverted.png");
 	background-size: cover;
 	background-position: center;
 	font-family: sans-serif;
@@ -43,39 +43,39 @@ a {
 }
 
 a,
-.cgx-blue {
+.nx-blue {
 	color: #376fa4;
 }
 
-.cgx-grey {
-	color: #575353;
+.nx-grey {
+	color: #dfdfdf;
 }
 
-.cgx-bg-grey {
+.nx-bg-grey {
 	background: #979797;
 }
 
-.cgx-light-grey {
+.nx-light-grey {
 	color: #e0e0e0;
 }
 
-.cgx-bg-light-grey {
+.nx-bg-light-grey {
 	background: #e0e0e0;
 }
 
-.cgx-dark-grey {
+.nx-dark-grey {
 	color: #5e5e5e;
 }
 
-.cgx-white {
-	color: #6b7681;
+.nx-white {
+	color: #fff;
 }
 
-.cgx-bg-white {
+.nx-bg-white {
 	background: #e9eef3;
 }
 
-.cgx-max-width {
+.nx-max-width {
 	max-width: 600px;
 	margin: 50px auto 100px;
 }
@@ -92,7 +92,7 @@ h6,
 
 .logo {
 	font-size: 2.75rem;
-	.cgx-blue {
+	.nx-blue {
 		font-size: 90%;
 	}
 	a {
@@ -101,7 +101,7 @@ h6,
 }
 
 .projects {
-	@extend .cgx-grey;
+	@extend .nx-grey;
 
 	max-width: 240px;
 	.hide-on-mobile {
@@ -121,9 +121,9 @@ h6,
 		transition: color 0.3s;
 		text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
 		&:hover {
-			@extend .cgx-white;
+			@extend .nx-white;
 		}
-		@extend .cgx-grey;
+		@extend .nx-grey;
 	}
 }
 
@@ -134,9 +134,9 @@ h6,
 	a {
 		text-decoration: none;
 		&:hover {
-			@extend .cgx-white;
+			@extend .nx-white;
 		}
-		@extend .cgx-grey;
+		@extend .nx-grey;
 	}
 
 	.sr-only {
