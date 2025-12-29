@@ -17,7 +17,7 @@ export default {
 <style lang="scss">
 body {
 	color: #232323;
-	background: white url("./assets/triangles-inverted.png");
+	background: #252424;
 	background-size: cover;
 	background-position: center;
 	font-family: sans-serif;
@@ -61,6 +61,10 @@ a,
 
 .nx-bg-light-grey {
 	background: #e0e0e0;
+}
+
+.nx-bg-dark-grey {
+	background: #5e5e5e;
 }
 
 .nx-dark-grey {

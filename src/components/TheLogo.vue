@@ -1,7 +1,7 @@
 <template>
     <div class="m-auto">
-        <!-- <img src="./../assets/nuxmo.jpg" alt="logo" class="logo m-auto d-block shadow border" /> -->
-        <h1 class="logo-text nx-grey">nuxmo</h1>
+        <img src="./../assets/old-dude.jpg" alt="logo" class="logo m-auto d-block shadow border" />
+        <h1 class="logo-text nx-grey visually-hidden">nuxmo</h1>
     </div>
 </template>
 
@@ -14,7 +14,7 @@ export default {
 
 <style lang="scss" scoped>
 .logo {
-    width: 70px;
+    width: 200px;
     border-radius: 50%;
 }
 

@@ -1,8 +1,8 @@
 <template>
 	<main class="d-flex flex-column h-100 py-4">
-        <TheProfiles />
+        <!-- <TheProfiles /> -->
         <TheAvatar />
-        <TheProjects />
+        <!-- <TheProjects /> -->
 	</main>
 </template>
 
