@@ -1,7 +1,7 @@
 <template>
-    <div class="m-auto d-md-flex justify-content-center align-items-center">
-        <img src="./../assets/old-dude.jpg" alt="logo" class="logo m-auto d-block d-md-inline-block me-md-4 shadow border border-3 border-secondary" />
-        <h1 class="logo-text nx-grey d-md-inline-block">nuxmo</h1>
+    <div class="m-auto">
+        <img src="./../assets/old-dude.jpg" alt="logo" class="logo m-auto d-none d-md-block shadow border border-3 border-secondary mb-4" />
+        <h1 class="logo-text nx-grey">nuxmo</h1>
     </div>
 </template>
 
@@ -23,9 +23,9 @@ export default {
     font-optical-sizing: auto;
     font-weight: 400;
     text-align: center;
-    font-size: 3.5rem;
-    letter-spacing: 1rem;
-    margin-right: -1rem;
+    font-size: 4rem;
+    letter-spacing: .5rem;
+    margin-right: -.5rem;
     background: -webkit-linear-gradient(315deg, #e1a265 25%, #38bbe4);
     background-clip: text;
     -webkit-background-clip: text;
