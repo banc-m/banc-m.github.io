@@ -17,7 +17,7 @@ export default {
 <style lang="scss">
 body {
 	color: #232323;
-	background: #252424;
+	background: #252424 url("./assets/triangles-inverted.png");
 	background-size: cover;
 	background-position: center;
 	font-family: sans-serif;

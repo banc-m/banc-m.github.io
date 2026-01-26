@@ -1,7 +1,7 @@
 <template>
-    <div class="m-auto">
-        <img src="./../assets/old-dude.jpg" alt="logo" class="logo m-auto d-block shadow border" />
-        <h1 class="logo-text nx-grey visually-hidden">nuxmo</h1>
+    <div class="m-auto d-md-flex justify-content-center align-items-center">
+        <img src="./../assets/old-dude.jpg" alt="logo" class="logo m-auto d-block d-md-inline-block me-md-4 shadow border" />
+        <h1 class="logo-text nx-grey d-md-inline-block">nuxmo</h1>
     </div>
 </template>
 
@@ -14,14 +14,15 @@ export default {
 
 <style lang="scss" scoped>
 .logo {
-    width: 200px;
+    width: 70px;
     border-radius: 50%;
 }
 
 .logo-text {
-    font-family: "Montserrat", sans-serif;
+    // font-family: "Montserrat", sans-serif;
+    font-family: "Doto", sans-serif;
     font-optical-sizing: auto;
-    font-weight: 400;
+    font-weight: 600;
     text-align: center;
     font-size: 4.5rem;
     letter-spacing: 1rem;
