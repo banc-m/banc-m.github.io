@@ -1,3 +1,3 @@
-# Nuxmo
+# bancm
 
-Source files for [nuxmo.github.io](nuxmo.github.io) site.
+Source files for [bancm.github.io](bancm.github.io) site.
