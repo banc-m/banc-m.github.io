@@ -1,7 +1,7 @@
 <template>
     <div class="m-auto">
         <img src="./../assets/old-dude.jpg" alt="logo" class="logo m-auto d-none d-md-block shadow border border-3 border-secondary mb-4" />
-        <h1 class="logo-text bm-grey">bancm</h1>
+        <h1 class="logo-text bm-grey">nuvmo</h1>
     </div>
 </template>
 

@@ -49,7 +49,7 @@ export default {
                 {
 					text: 'Squash List',
 					img: new URL('./../assets/squashlist.png', import.meta.url).href,
-					url: '/squashlist',
+					url: '//squashlist.github.io',
 				},
 			],
 		}
