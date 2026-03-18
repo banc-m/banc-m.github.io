@@ -17,17 +17,17 @@ export default {
 			profiles: [
 				{
 					text: 'GitHub',
-					url: '//github.com/banc-m',
+					url: '//github.com/nuvmo',
 					icon: 'github'
 				},
 				{
 					text: 'CodePen',
-					url: '//codepen.io/bancm/',
+					url: '//codepen.io/nuvmo/',
 					icon: 'codepen'
 				},
 				{
 					text: 'SoundCloud',
-					url: '//soundcloud.com/bancm',
+					url: '//soundcloud.com/nuvmo',
 					icon: 'soundcloud'
 				}
 			]
