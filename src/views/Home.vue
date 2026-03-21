@@ -1,5 +1,5 @@
 <template>
-	<main class="d-flex flex-column h-100 py-4">
+	<main class="d-flex flex-column py-4">
         <TheProfiles />
         <TheAvatar />
         <TheProjects />

@@ -1,5 +1,5 @@
 <template>
-	<div id="app">
+	<div class="app">
 		<HomePage />
 	</div>
 </template>
@@ -32,54 +32,57 @@ body {
 	}
 }
 
-#app {
+.app {
 	overflow-x: hidden;
-	height: 100vh;
+	min-height: 100vh;
 	animation: fade-in 2s;
+}
+
+main {
+    min-height: 100vh;
 }
 
 a {
 	transition: color 0.3s;
 }
 
-a,
-.bm-blue {
+.nv-blue {
 	color: #376fa4;
 }
 
-.bm-grey {
+.nv-grey {
 	color: #dfdfdf;
 }
 
-.bm-bg-grey {
+.nv-bg-grey {
 	background: #979797;
 }
 
-.bm-light-grey {
+.nv-light-grey {
 	color: #e0e0e0;
 }
 
-.bm-bg-light-grey {
+.nv-bg-light-grey {
 	background: #e0e0e0;
 }
 
-.bm-bg-dark-grey {
+.nv-bg-dark-grey {
 	background: #5e5e5e;
 }
 
-.bm-dark-grey {
+.nv-dark-grey {
 	color: #5e5e5e;
 }
 
-.bm-white {
+.nv-white {
 	color: #fff;
 }
 
-.bm-bg-white {
+.nv-bg-white {
 	background: #e9eef3;
 }
 
-.bm-max-width {
+.nv-max-width {
 	max-width: 600px;
 	margin: 50px auto 100px;
 }
@@ -96,7 +99,7 @@ h6,
 
 .logo {
 	font-size: 2.75rem;
-	.bm-blue {
+	.nv-blue {
 		font-size: 90%;
 	}
 	a {
@@ -105,46 +108,14 @@ h6,
 }
 
 .projects {
-	@extend .bm-grey;
-
-	max-width: 240px;
-	.hide-on-mobile {
-		display: none;
-	}
+	max-width: 360px;
 
 	@media (min-width: 500px) {
 		max-width: 700px;
-		.hide-on-mobile {
-			display: initial;
-		}
-	}
-
-	a {
-		text-decoration: none;
-		font-size: 0.9rem;
-		transition: color 0.3s;
-		text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
-		&:hover {
-			@extend .bm-white;
-		}
-		@extend .bm-grey;
 	}
 }
 
 .profiles {
-	max-width: 300px;
-	font-size: 1.3rem;
-
-	a {
-		text-decoration: none;
-		&:hover {
-			@extend .bm-white;
-		}
-		@extend .bm-grey;
-	}
-
-	.sr-only {
-		color: #232323;
-	}
+	max-width: 400px;
 }
 </style>
