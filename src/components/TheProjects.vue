@@ -36,7 +36,7 @@ export default {
                 },
                 {
                     text: 'WordMap',
-                    description: 'Find out how to say any word in an interactive map',
+                    description: 'See how any word translates across every country in Europe',
                     url: '/word-map',
                     img: new URL('./../assets/word-map.svg', import.meta.url).href,
                     rounded: true
