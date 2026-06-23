@@ -3,6 +3,7 @@
         <TheProfiles />
         <TheAvatar />
         <TheProjects />
+        <TheCV />
 	</main>
 </template>
 
@@ -10,13 +11,15 @@
 import TheAvatar from '@/components/TheLogo.vue'
 import TheProjects from '@/components/TheProjects.vue'
 import TheProfiles from '@/components/TheProfiles.vue'
+import TheCV from '@/components/TheCV.vue'
 
 export default {
 	name: 'HomePage',
 	components: {
 		TheAvatar,
 		TheProjects,
-		TheProfiles
+		TheProfiles,
+		TheCV
 	}
 }
 </script>
