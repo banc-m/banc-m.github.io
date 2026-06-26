@@ -12,11 +12,11 @@
             </div>
             <div class="terminal-body" ref="body">
                 <div class="line" v-for="(line, i) in output" :key="i">
-                    <span v-if="line.prompt" class="prompt">visitor@nuvmo&nbsp;~&nbsp;%&nbsp;</span>
+                    <span v-if="line.prompt" class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
                     <span :class="['text', line.type]" v-html="line.text"></span>
                 </div>
                 <div class="input-line">
-                    <span class="prompt">visitor@nuvmo&nbsp;~&nbsp;%&nbsp;</span>
+                    <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
                     <span class="typed">{{ current }}</span><span class="cursor"></span>
                 </div>
             </div>
@@ -40,20 +40,30 @@
 <script>
 const DATA = {
     experience: [
-        { title: 'Senior Frontend Developer', place: 'Acme Corp', period: '2022 – present', desc: 'Lead Vue 3 design system across 5 products.' },
-        { title: 'Frontend Developer', place: 'Bright Labs', period: '2019 – 2022', desc: 'Interactive dashboards with React and D3.' },
-        { title: 'Junior Web Developer', place: 'Pixel Studio', period: '2017 – 2019', desc: 'Responsive marketing sites and WordPress builds.' }
+        { title: 'Web Team Manager',              place: 'University of Strathclyde',                  period: '2023 – present', desc: 'Leading the web team responsible for the university\'s digital presence.' },
+        { title: 'Web Designer/Developer',        place: 'University of Strathclyde',                  period: '2018 – 2023',    desc: 'Design and front-end development across the university\'s web estate.' },
+        { title: 'Web Designer/Developer',        place: 'BiP Solutions',                              period: '2015 – 2018',    desc: 'Web design and development for public sector procurement platforms.' },
+        { title: 'Web Designer/Developer',        place: 'Edinburgh Bicycle Cooperative',              period: '2012 – 2015',    desc: 'E-commerce and web presence for a worker-owned cycling cooperative.' },
+        { title: 'Web Designer/Developer',        place: 'Self Employed',                              period: '2011 – 2012',    desc: 'Freelance web design and development.' },
+        { title: 'Educational Resources Tech.',   place: 'University of Glasgow',                      period: '2009 – 2011',    desc: 'Supported digital learning resources and the faculty web presence.' },
+        { title: 'Multimedia Designer',           place: 'Self Employed',                              period: '2008 – 2009',    desc: 'Freelance multimedia and graphic design.' },
+        { title: 'Assistant Producer',            place: 'R.A.W. Business Communications',             period: '2008',           desc: 'Video and corporate communications production.' },
+        { title: 'Web Marketing Officer',         place: 'University of Glasgow',                      period: '2007',           desc: 'Online marketing and web presence for the university.' },
+        { title: 'Education Projects Officer',    place: 'Scottish Screen',                            period: '2001 – 2007',    desc: 'Digital education projects for Scotland\'s national screen agency.' },
+        { title: 'Event Assistant',               place: 'European Youth Film Festival of Flanders',   period: '2000 – 2001',    desc: 'Festival coordination and administration in Antwerp.' },
+        { title: 'Runner',                        place: 'Scala Productions',                          period: '1999',           desc: 'Entry-level TV production in London.' },
     ],
     skills: {
-        Frontend: ['Vue 3', 'React', 'TypeScript', 'CSS / Sass', 'SVG / Canvas'],
-        Backend: ['Node.js', 'Express', 'PostgreSQL', 'REST', 'GraphQL'],
-        Tooling: ['Vite', 'Webpack', 'Git', 'Docker', 'GitHub Actions'],
-        Creative: ['Figma', 'Blender', 'Ableton Live', 'Generative Art']
+        Frontend:  ['HTML', 'CSS / Sass', 'JavaScript', 'Vue'],
+        Design:    ['Figma', 'UI / UX', 'Accessibility'],
+        Tooling:    ['Vite', 'Git', 'Node.js', 'WordPress', 'PHP', 'DevOps', 'AI'],
+        Leadership: ['Team Management', 'Mentoring'],
     },
     education: [
-        { title: 'BSc Computer Science', place: 'University of Edinburgh', period: '2013 – 2017', desc: 'Specialised in HCI and graphics programming.' }
+        { title: 'BSc Physics', place: 'University of Edinburgh', period: '1994 – 1998', desc: '' }
     ],
     projects: [
+        { name: 'css-showcase',         desc: 'What\'s possible with modern CSS',                               url: '/css-showcase' },
         { name: 'ghosting',             desc: 'Squash ghosting training app',                     url: '/ghosting' },
         { name: 'word-map',             desc: 'See how any word translates across Europe',         url: '/word-map' },
         { name: 'photo-viewer',         desc: 'A clean, minimal photo gallery',                   url: '/photos' },
@@ -65,7 +75,7 @@ const DATA = {
         { label: 'LinkedIn',   value: 'linkedin.com/in/martinmstewart', url: '//www.linkedin.com/in/martinmstewart/' },
         { label: 'GitHub',     value: 'github.com/nuvmo',               url: '//github.com/nuvmo' },
         { label: 'CodePen',    value: 'codepen.io/nuvmo',               url: '//codepen.io/nuvmo/' },
-        { label: 'SoundCloud', value: 'soundcloud.com/nuvmo',           url: '//soundcloud.com/nuvmo' }
+        { label: 'Soundcloud', value: 'soundcloud.com/nuvmo',           url: '//soundcloud.com/nuvmo' }
     ]
 }
 
@@ -76,8 +86,9 @@ function pad (str, len) {
 function renderExperience () {
     const lines = []
     DATA.experience.forEach(e => {
-        lines.push(`<span class="accent">${e.title}</span> @ ${e.place} &nbsp;<span class="dim">${e.period}</span>`)
-        lines.push(`  ${e.desc}`)
+        lines.push(`<span class="accent">${e.title}</span>`)
+        lines.push(`  <span class="dim">${e.place} · ${e.period}</span>`)
+        if (e.desc) lines.push(`  ${e.desc}`)
         lines.push('')
     })
     return lines
@@ -97,7 +108,7 @@ function renderEducation () {
     const lines = []
     DATA.education.forEach(e => {
         lines.push(`<span class="accent">${e.title}</span> — ${e.place} &nbsp;<span class="dim">${e.period}</span>`)
-        lines.push(`  ${e.desc}`)
+        if (e.desc) lines.push(`  ${e.desc}`)
     })
     return lines
 }
@@ -145,7 +156,7 @@ export default {
     name: 'TheTerminal',
     data () {
         return {
-            theme: 'dark',
+            theme: localStorage.getItem('theme') || 'dark',
             current: '',
             output: WELCOME.map(text => ({ text, type: 'info' })),
             history: [],
@@ -158,6 +169,7 @@ export default {
     methods: {
         toggleTheme () {
             this.theme = this.theme === 'dark' ? 'light' : 'dark'
+            localStorage.setItem('theme', this.theme)
             this.$nextTick(() => this.$refs.input.focus())
         },
         focusInput () {
