@@ -1,25 +1,21 @@
 <template>
-	<main class="d-flex flex-column py-4">
-        <TheProfiles />
-        <TheAvatar />
-        <TheProjects />
-        <TheCV />
+	<main class="page d-flex flex-column align-items-center py-3 px-0">
+        <TheTerminal />
 	</main>
 </template>
 
 <script>
-import TheAvatar from '@/components/TheLogo.vue'
-import TheProjects from '@/components/TheProjects.vue'
-import TheProfiles from '@/components/TheProfiles.vue'
-import TheCV from '@/components/TheCV.vue'
+import TheTerminal from '@/components/TheTerminal.vue'
 
 export default {
 	name: 'HomePage',
-	components: {
-		TheAvatar,
-		TheProjects,
-		TheProfiles,
-		TheCV
-	}
+	components: { TheTerminal }
 }
 </script>
+
+<style scoped>
+.page {
+    height: 100vh;
+    overflow: hidden;
+}
+</style>

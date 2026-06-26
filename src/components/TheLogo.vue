@@ -1,8 +1,7 @@
 <template>
     <div class="m-auto text-center mb-4">
-        <img src="./../assets/old-dude.jpg" alt="nuvmo" class="avatar m-auto d-none d-md-block shadow border border-3 border-secondary mb-4" />
-        <h1 class="logo-text">nuvmo</h1>
-        <p class="tagline">web designer &amp; developer</p>
+<h1 class="logo-text">nuvmo</h1>
+        <p class="tagline">martin stewart: web designer &amp; developer</p>
     </div>
 </template>
 
@@ -13,11 +12,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.avatar {
-    width: 70px;
-    border-radius: 50%;
-}
-
 .logo-text {
     font-family: "Zen Dots", sans-serif;
     font-optical-sizing: auto;

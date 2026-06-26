@@ -17,9 +17,14 @@ export default {
 <style lang="scss">
 body {
 	color: #232323;
-	background: #252424 url("./assets/triangles-inverted.png");
-	background-size: cover;
-	background-position: center;
+	background-color: #111213;
+	background-image: repeating-linear-gradient(
+		0deg,
+		rgba(0, 0, 0, 0.18) 0px,
+		rgba(0, 0, 0, 0.18) 1px,
+		transparent 1px,
+		transparent 4px
+	);
 	font-family: sans-serif;
 }
 
