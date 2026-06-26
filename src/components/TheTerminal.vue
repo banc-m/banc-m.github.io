@@ -193,6 +193,7 @@ export default {
         this._onWinFocus = () => { this.focused = true }
         this._onPageShow = (e) => {
             if (e.persisted) {
+                this.selection = { active: false, items: [], current: 0, id: 0 }
                 this.$nextTick(() => {
                     this.$refs.input.focus()
                     this.focused = true
@@ -304,13 +305,13 @@ export default {
                 this.submit()
                 return
             }
+            this.exitSelection()
             const url = item.url.startsWith('//') ? 'https:' + item.url : item.url
             if (item.external || item.url.startsWith('//')) {
                 window.open(url, '_blank', 'noopener,noreferrer')
             } else {
                 window.location.href = url
             }
-            this.exitSelection()
         },
         escapeKey () {
             if (this.selection.active) this.exitSelection()
