@@ -191,12 +191,22 @@ export default {
         document.body.classList.toggle('theme-light', this.theme === 'light')
         this._onWinBlur  = () => { this.focused = false }
         this._onWinFocus = () => { this.focused = true }
-        window.addEventListener('blur',  this._onWinBlur)
-        window.addEventListener('focus', this._onWinFocus)
+        this._onPageShow = (e) => {
+            if (e.persisted) {
+                this.$nextTick(() => {
+                    this.$refs.input.focus()
+                    this.focused = true
+                })
+            }
+        }
+        window.addEventListener('blur',     this._onWinBlur)
+        window.addEventListener('focus',    this._onWinFocus)
+        window.addEventListener('pageshow', this._onPageShow)
     },
     beforeUnmount () {
-        window.removeEventListener('blur',  this._onWinBlur)
-        window.removeEventListener('focus', this._onWinFocus)
+        window.removeEventListener('blur',     this._onWinBlur)
+        window.removeEventListener('focus',    this._onWinFocus)
+        window.removeEventListener('pageshow', this._onPageShow)
     },
     methods: {
         toggleTheme () {
