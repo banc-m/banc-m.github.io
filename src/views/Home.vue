@@ -16,6 +16,14 @@ export default {
 <style scoped>
 .page {
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .page {
+        padding-top: clamp(2rem, 8vh, 10rem) !important;
+        padding-bottom: clamp(2rem, 8vh, 10rem) !important;
+    }
 }
 </style>

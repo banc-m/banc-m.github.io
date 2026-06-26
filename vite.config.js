@@ -7,6 +7,9 @@ export default defineConfig(({command}) => {
 
   return {
     plugins: [vue()],
+    server: {
+      host: true
+    },
     build: {
       outDir: 'docs'
     },

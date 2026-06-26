@@ -5,19 +5,26 @@
                 <span class="dot dot-red"></span>
                 <span class="dot dot-yellow"></span>
                 <span class="dot dot-green"></span>
-                <span class="bar-title">Martin Stewart — web designer &amp; developer</span>
-                <button class="theme-toggle" @click.stop="toggleTheme" :title="theme === 'dark' ? 'Switch to light' : 'Switch to dark'">
-                    {{ theme === 'dark' ? '☀' : '☾' }}
+                <span class="bar-title">Martin Stewart <span class="title-dash">—</span><br class="title-break"> web designer &amp; developer</span>
+                <button class="theme-toggle" @click.stop="toggleTheme" :class="{ 'is-light': theme === 'light' }" title="Toggle theme">
+                    <i class="fas fa-moon"></i>
+                    <span class="toggle-thumb"></span>
+                    <i class="fas fa-sun"></i>
                 </button>
             </div>
             <div class="terminal-body" ref="body">
                 <div class="line" v-for="(line, i) in output" :key="i">
                     <span v-if="line.prompt" class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
-                    <span :class="['text', line.type]" v-html="line.text"></span>
+                    <template v-if="line.selectable">
+                        <span class="sel-arrow" :class="{ 'sel-arrow--on': selection.active && selection.id === line.selectionId && selection.current === line.selectIndex }">▸</span>
+                        <span :class="['text', line.type, { 'sel-line-active': selection.active && selection.id === line.selectionId && selection.current === line.selectIndex }]" @click.stop="activateItem(line.selectIndex, line.selectionId, $event)" v-html="line.text"></span>
+                    </template>
+                    <span v-else :class="['text', line.type]" v-html="line.text"></span>
                 </div>
-                <div class="input-line">
+                <div v-if="selection.active" class="sel-hint">{{ selHint }}</div>
+                <div v-else class="input-line">
                     <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
-                    <span class="typed">{{ current }}</span><span class="cursor"></span>
+                    <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span>
                 </div>
             </div>
             <input
@@ -28,7 +35,12 @@
                 @keydown.tab.prevent="tabComplete"
                 @keydown.up.prevent="historyUp"
                 @keydown.down.prevent="historyDown"
+                @keydown.escape.prevent="escapeKey"
+                @focus="focused = true"
+                @blur="focused = false"
                 autocomplete="off"
+                autocapitalize="none"
+                autocorrect="off"
                 spellcheck="false"
                 aria-hidden="true"
                 tabindex="-1"
@@ -79,17 +91,13 @@ const DATA = {
     ]
 }
 
-function pad (str, len) {
-    return str + ' '.repeat(Math.max(0, len - str.length))
-}
-
 function renderExperience () {
     const lines = []
     DATA.experience.forEach(e => {
         lines.push(`<span class="accent">${e.title}</span>`)
-        lines.push(`  <span class="dim">${e.place} · ${e.period}</span>`)
-        if (e.desc) lines.push(`  ${e.desc}`)
-        lines.push('')
+        lines.push(`<span class="dim">${e.place} · ${e.period}</span>`)
+        if (e.desc) lines.push(e.desc)
+        lines.push('<span class="entry-gap"></span>')
     })
     return lines
 }
@@ -99,7 +107,7 @@ function renderSkills () {
     Object.entries(DATA.skills).forEach(([cat, items]) => {
         lines.push(`<span class="accent">${cat}</span>`)
         lines.push(`  ${items.join('  ·  ')}`)
-        lines.push('')
+        lines.push('<span class="entry-gap"></span>')
     })
     return lines
 }
@@ -108,23 +116,22 @@ function renderEducation () {
     const lines = []
     DATA.education.forEach(e => {
         lines.push(`<span class="accent">${e.title}</span> — ${e.place} &nbsp;<span class="dim">${e.period}</span>`)
-        if (e.desc) lines.push(`  ${e.desc}`)
+        if (e.desc) lines.push(e.desc)
+        lines.push('<span class="entry-gap"></span>')
     })
     return lines
 }
 
 function renderProjects () {
-    const colW = Math.max(...DATA.projects.map(p => p.name.length)) + 2
     return DATA.projects.map(p => {
         const target = p.external ? ' target="_blank" rel="noopener noreferrer"' : ''
-        return `<a class="terminal-link" href="${p.url}"${target}>${p.name}</a>${' '.repeat(colW - p.name.length)}<span class="dim">${p.desc}</span>`
+        return `<a class="terminal-link" href="${p.url}"${target}>${p.name}</a>  <span class="dim">${p.desc}</span>`
     })
 }
 
 function renderLinks () {
-    const colW = Math.max(...DATA.links.map(l => l.label.length)) + 2
     return DATA.links.map(l =>
-        `<span class="accent">${pad(l.label, colW)}</span><a class="terminal-link" href="${l.url}" target="_blank" rel="noopener noreferrer">${l.value}</a>`
+        `<span class="accent">${l.label}</span>  <a class="terminal-link" href="${l.url}" target="_blank" rel="noopener noreferrer">${l.value}</a>`
     )
 }
 
@@ -132,12 +139,12 @@ const COMMANDS = {
     help () {
         return [
             'Available commands:',
-            '  <span class="accent">experience</span>   — work history',
-            '  <span class="accent">skills</span>       — skill categories',
-            '  <span class="accent">education</span>    — academic background',
-            '  <span class="accent">projects</span>     — things I\'ve built',
-            '  <span class="accent">links</span>        — profiles &amp; socials',
-            '  <span class="accent">clear</span>        — clear the terminal',
+            '<span class="accent">experience</span>   — work history',
+            '<span class="accent">skills</span>       — skill categories',
+            '<span class="accent">education</span>    — academic background',
+            '<span class="accent">projects</span>     — things I\'ve built',
+            '<span class="accent">links</span>        — profiles &amp; socials',
+            '<span class="accent">clear</span>        — clear the terminal',
         ]
     },
     experience: renderExperience,
@@ -147,10 +154,15 @@ const COMMANDS = {
     links: renderLinks
 }
 
-const WELCOME = [
-    'Type <span class="accent">help</span> for available commands. Use <span class="accent">Tab</span> to autocomplete.',
-    ''
-]
+function getWelcome () {
+    const touch = window.matchMedia('(pointer: coarse)').matches
+    return [
+        touch
+            ? 'Type <span class="accent">help</span> for available commands.'
+            : 'Type <span class="accent">help</span> for available commands. Use <span class="accent">Tab</span> to autocomplete.',
+        ''
+    ]
+}
 
 export default {
     name: 'TheTerminal',
@@ -158,24 +170,64 @@ export default {
         return {
             theme: localStorage.getItem('theme') || 'dark',
             current: '',
-            output: WELCOME.map(text => ({ text, type: 'info' })),
+            output: getWelcome().map(text => ({ text, type: 'info' })),
             history: [],
-            historyIndex: -1
+            historyIndex: -1,
+            selection: { active: false, items: [], current: 0, id: 0 },
+            selectionCounter: 0,
+            focused: true,
+            isTouch: window.matchMedia('(pointer: coarse)').matches
+        }
+    },
+    computed: {
+        selHint () {
+            if (this.isTouch) return 'tap an item to open'
+            const action = this.selection.items.length && this.selection.items[0].cmd ? 'run' : 'open'
+            return `↑↓ navigate  ·  ↵ ${action}  ·  esc cancel`
         }
     },
     mounted () {
         this.$nextTick(() => this.$refs.input.focus())
+        document.body.classList.toggle('theme-light', this.theme === 'light')
+        this._onWinBlur  = () => { this.focused = false }
+        this._onWinFocus = () => { this.focused = true }
+        window.addEventListener('blur',  this._onWinBlur)
+        window.addEventListener('focus', this._onWinFocus)
+    },
+    beforeUnmount () {
+        window.removeEventListener('blur',  this._onWinBlur)
+        window.removeEventListener('focus', this._onWinFocus)
     },
     methods: {
         toggleTheme () {
             this.theme = this.theme === 'dark' ? 'light' : 'dark'
             localStorage.setItem('theme', this.theme)
+            document.body.classList.toggle('theme-light', this.theme === 'light')
             this.$nextTick(() => this.$refs.input.focus())
         },
-        focusInput () {
+        focusInput (e) {
+            if (e.target.closest('a, button')) return
             this.$refs.input.focus()
         },
+        activateItem (index, selectionId, event) {
+            if (!this.selection.active) return
+            if (selectionId !== this.selection.id) return
+            if (event && event.target.closest('a')) return
+            this.selection.current = index
+            this.openSelected()
+        },
+        scrollToSelected () {
+            this.$nextTick(() => {
+                const el = this.$refs.body.querySelector('.sel-arrow--on')
+                if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+            })
+        },
         submit () {
+            if (this.selection.active) {
+                this.openSelected()
+                return
+            }
+
             const cmd = this.current.trim().toLowerCase()
             if (!cmd) return
 
@@ -186,6 +238,33 @@ export default {
 
             if (cmd === 'clear') {
                 this.output = []
+            } else if (cmd === 'help') {
+                const lines = COMMANDS.help()
+                this.output.push({ text: lines[0], type: 'out' })
+                const cmdNames = ['experience', 'skills', 'education', 'projects', 'links', 'clear']
+                const sid = ++this.selectionCounter
+                lines.slice(1).forEach((text, i) => {
+                    this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
+                    this.output.push({ text: '<span class="entry-gap"></span>', type: 'out' })
+                })
+                this.output.push({ text: '', type: 'out' })
+                this.enterSelection(cmdNames.map(c => ({ label: c, cmd: c })), sid)
+            } else if (cmd === 'projects') {
+                const sid = ++this.selectionCounter
+                renderProjects().forEach((text, i) => {
+                    this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
+                    this.output.push({ text: '<span class="entry-gap"></span>', type: 'out' })
+                })
+                this.output.push({ text: '', type: 'out' })
+                this.enterSelection(DATA.projects.map(p => ({ label: p.name, sublabel: p.desc, url: p.url, external: !!p.external })), sid)
+            } else if (cmd === 'links') {
+                const sid = ++this.selectionCounter
+                renderLinks().forEach((text, i) => {
+                    this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
+                    this.output.push({ text: '<span class="entry-gap"></span>', type: 'out' })
+                })
+                this.output.push({ text: '', type: 'out' })
+                this.enterSelection(DATA.links.map(l => ({ label: l.label, sublabel: l.value, url: l.url, external: true })), sid)
             } else if (COMMANDS[cmd]) {
                 const lines = COMMANDS[cmd]()
                 lines.forEach(l => this.output.push({ text: l, type: 'out' }))
@@ -199,6 +278,32 @@ export default {
                 const b = this.$refs.body
                 b.scrollTop = b.scrollHeight
             })
+        },
+        enterSelection (items, id) {
+            this.selection = { active: true, items, current: 0, id }
+        },
+        exitSelection () {
+            this.selection = { active: false, items: [], current: 0, id: 0 }
+            this.$nextTick(() => this.$refs.input.focus())
+        },
+        openSelected () {
+            const item = this.selection.items[this.selection.current]
+            if (item.cmd) {
+                this.exitSelection()
+                this.current = item.cmd
+                this.submit()
+                return
+            }
+            const url = item.url.startsWith('//') ? 'https:' + item.url : item.url
+            if (item.external || item.url.startsWith('//')) {
+                window.open(url, '_blank', 'noopener,noreferrer')
+            } else {
+                window.location.href = url
+            }
+            this.exitSelection()
+        },
+        escapeKey () {
+            if (this.selection.active) this.exitSelection()
         },
         tabComplete () {
             const cmd = this.current.toLowerCase()
@@ -229,12 +334,22 @@ export default {
             this.$nextTick(() => { this.$refs.body.scrollTop = this.$refs.body.scrollHeight })
         },
         historyUp () {
+            if (this.selection.active) {
+                this.selection.current = (this.selection.current - 1 + this.selection.items.length) % this.selection.items.length
+                this.scrollToSelected()
+                return
+            }
             if (this.historyIndex < this.history.length - 1) {
                 this.historyIndex++
                 this.current = this.history[this.historyIndex]
             }
         },
         historyDown () {
+            if (this.selection.active) {
+                this.selection.current = (this.selection.current + 1) % this.selection.items.length
+                this.scrollToSelected()
+                return
+            }
             if (this.historyIndex > 0) {
                 this.historyIndex--
                 this.current = this.history[this.historyIndex]
@@ -313,7 +428,7 @@ export default {
     border: 1px solid var(--t-border);
     border-radius: 12px;
     overflow: hidden;
-    font-family: monospace;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', Menlo, monospace;
     font-size: 0.85rem;
     transition: background 0.25s, border-color 0.25s;
 }
@@ -345,25 +460,70 @@ export default {
     color: var(--t-title);
     font-size: 0.72rem;
     transition: color 0.25s;
+
+    .title-break, .title-dash { display: none; }
+
+    @media (max-width: 540px) {
+        .title-break { display: block; }
+        .title-dash  { display: none; }
+    }
+
+    @media (min-width: 541px) {
+        .title-dash { display: inline; }
+    }
 }
 
 .theme-toggle {
-    background: none;
-    border: none;
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--t-bg);
+    border: 1px solid var(--t-bar-border);
+    border-radius: 999px;
+    padding: 3px;
     cursor: pointer;
-    color: var(--t-title);
-    font-size: 0.9rem;
-    padding: 0;
-    line-height: 1;
-    transition: color 0.2s;
+    transition: border-color 0.25s, background 0.25s;
 
-    &:hover { color: var(--t-text); }
+    i {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        position: relative;
+        z-index: 1;
+        transition: color 0.25s;
+    }
+
+    .fa-moon { color: var(--t-bg); }
+    .fa-sun  { color: var(--t-dim); }
+
+    .toggle-thumb {
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--t-text);
+        left: 3px;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
+    }
+
+    &.is-light {
+        .toggle-thumb { transform: translateX(18px); }
+        .fa-moon { color: var(--t-dim); }
+        .fa-sun  { color: var(--t-bg); }
+    }
+
+    &:hover { border-color: var(--t-dim); }
 }
 
 .terminal-body {
     flex: 1;
     padding: 16px 20px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     color: var(--t-text);
     line-height: 1.7;
     transition: color 0.25s;
@@ -376,6 +536,7 @@ export default {
 .line {
     white-space: pre-wrap;
     word-break: break-word;
+    overflow-wrap: break-word;
 
     .text {
         &.err  { color: var(--t-err); }
@@ -387,6 +548,33 @@ export default {
     display: flex;
     align-items: center;
 }
+
+.sel-arrow {
+    display: inline-block;
+    width: 1.4em;
+    color: transparent;
+    transition: color 0.1s;
+    user-select: none;
+
+    &--on { color: var(--t-accent); }
+
+    @media (pointer: coarse) { display: none; }
+}
+
+.sel-line-active {
+    color: var(--t-text);
+
+    :deep(a.terminal-link) { color: var(--t-text); }
+    :deep(.dim)            { color: var(--t-text); }
+}
+
+.sel-hint {
+    color: var(--t-dim);
+    font-size: 0.8em;
+    padding-left: 1.4em;
+    margin-top: 2px;
+}
+
 
 .prompt {
     color: var(--t-prompt);
@@ -404,8 +592,9 @@ export default {
     height: 1.1em;
     background: var(--t-cursor);
     vertical-align: text-bottom;
-    animation: blink 1s step-start infinite;
     transition: background 0.25s;
+
+    &--focused { animation: blink 1s step-start infinite; }
 }
 
 .hidden-input {
@@ -416,8 +605,9 @@ export default {
     height: 0;
 }
 
-:deep(.accent) { color: var(--t-accent); }
-:deep(.dim)    { color: var(--t-dim); }
+:deep(.accent)     { color: var(--t-accent); }
+:deep(.dim)        { color: var(--t-dim); }
+:deep(.entry-gap)  { display: block; height: 0.6em; }
 :deep(a.terminal-link) {
     color: var(--t-link);
     text-decoration: none;
