@@ -21,7 +21,7 @@
                     </template>
                     <span v-else :class="['text', line.type]" v-html="line.text"></span>
                 </div>
-                <div v-if="selection.active" class="sel-hint">{{ selHint }}</div>
+                <div v-if="selection.active" class="sel-hint" v-html="selHint"></div>
                 <div v-else class="input-line">
                     <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
                     <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span>
@@ -51,19 +51,19 @@
 
 <script>
 const DATA = {
-    experience: [
+    cv: [
         { title: 'Web Team Manager',              place: 'University of Strathclyde',                  period: '2023 – present', desc: 'Leading the web team responsible for the university\'s digital presence.' },
         { title: 'Web Designer/Developer',        place: 'University of Strathclyde',                  period: '2018 – 2023',    desc: 'Design and front-end development across the university\'s web estate.' },
         { title: 'Web Designer/Developer',        place: 'BiP Solutions',                              period: '2015 – 2018',    desc: 'Web design and development for public sector procurement platforms.' },
         { title: 'Web Designer/Developer',        place: 'Edinburgh Bicycle Cooperative',              period: '2012 – 2015',    desc: 'E-commerce and web presence for a worker-owned cycling cooperative.' },
         { title: 'Web Designer/Developer',        place: 'Self Employed',                              period: '2011 – 2012',    desc: 'Freelance web design and development.' },
-        { title: 'Educational Resources Tech.',   place: 'University of Glasgow',                      period: '2009 – 2011',    desc: 'Supported digital learning resources and the faculty web presence.' },
+        { title: 'Educational Resources Technician',   place: 'University of Glasgow',                      period: '2009 – 2011',    desc: 'Supported digital learning resources and the faculty web presence.' },
         { title: 'Multimedia Designer',           place: 'Self Employed',                              period: '2008 – 2009',    desc: 'Freelance multimedia and graphic design.' },
         { title: 'Assistant Producer',            place: 'R.A.W. Business Communications',             period: '2008',           desc: 'Video and corporate communications production.' },
         { title: 'Web Marketing Officer',         place: 'University of Glasgow',                      period: '2007',           desc: 'Online marketing and web presence for the university.' },
         { title: 'Education Projects Officer',    place: 'Scottish Screen',                            period: '2001 – 2007',    desc: 'Digital education projects for Scotland\'s national screen agency.' },
         { title: 'Event Assistant',               place: 'European Youth Film Festival of Flanders',   period: '2000 – 2001',    desc: 'Festival coordination and administration in Antwerp.' },
-        { title: 'Runner',                        place: 'Scala Productions',                          period: '1999',           desc: 'Entry-level TV production in London.' },
+        { title: 'Runner',                        place: 'Scala Productions',                          period: '1999',           desc: 'Entry-level film production in London.' },
     ],
     skills: {
         Frontend:  ['HTML', 'CSS / Sass', 'JavaScript', 'Vue'],
@@ -72,6 +72,8 @@ const DATA = {
         Leadership: ['Team Management', 'Mentoring'],
     },
     education: [
+        { title: 'The client side of application development', place: 'Open University', period: '2011', desc: '' },
+        { title: 'Web applications: design, development & management', place: 'Open University', period: '2010', desc: '' },
         { title: 'BSc Physics', place: 'University of Edinburgh', period: '1994 – 1998', desc: '' }
     ],
     projects: [
@@ -91,9 +93,9 @@ const DATA = {
     ]
 }
 
-function renderExperience () {
+function renderCv () {
     const lines = []
-    DATA.experience.forEach(e => {
+    DATA.cv.forEach(e => {
         lines.push(`<span class="accent">${e.title}</span>`)
         lines.push(`<span class="dim">${e.place} · ${e.period}</span>`)
         if (e.desc) lines.push(e.desc)
@@ -106,7 +108,7 @@ function renderSkills () {
     const lines = []
     Object.entries(DATA.skills).forEach(([cat, items]) => {
         lines.push(`<span class="accent">${cat}</span>`)
-        lines.push(`  ${items.join('  ·  ')}`)
+        lines.push(`${items.join(' · ')}`)
         lines.push('<span class="entry-gap"></span>')
     })
     return lines
@@ -129,6 +131,10 @@ function renderProjects () {
     })
 }
 
+function renderAbout () {
+    return ['Hello, my name is Martin! I\'m a Web Designer and Developer with a passion for designing and building websites and apps. I\'ve worked across commercial and public sector organisations, and outside of work I\'m a keen photographer and squash player.']
+}
+
 function renderLinks () {
     return DATA.links.map(l =>
         `<span class="accent">${l.label}</span>  <a class="terminal-link" href="${l.url}" target="_blank" rel="noopener noreferrer">${l.value}</a>`
@@ -139,7 +145,8 @@ const COMMANDS = {
     help () {
         return [
             'Available commands:',
-            '<span class="accent">experience</span>   — work history',
+            '<span class="accent">about</span>        — about me',
+            '<span class="accent">cv</span>           — work history',
             '<span class="accent">skills</span>       — skill categories',
             '<span class="accent">education</span>    — academic background',
             '<span class="accent">projects</span>     — things I\'ve built',
@@ -147,7 +154,8 @@ const COMMANDS = {
             '<span class="accent">clear</span>        — clear the terminal',
         ]
     },
-    experience: renderExperience,
+    about: renderAbout,
+    cv: renderCv,
     skills: renderSkills,
     education: renderEducation,
     projects: renderProjects,
@@ -181,7 +189,7 @@ export default {
     },
     computed: {
         selHint () {
-            if (this.isTouch) return 'tap an item to open'
+            if (this.isTouch) return '<i class="fas fa-hand-pointer"></i> tap an item to open'
             const action = this.selection.items.length && this.selection.items[0].cmd ? 'run' : 'open'
             return `↑↓ navigate  ·  ↵ ${action}  ·  esc cancel`
         }
@@ -252,7 +260,7 @@ export default {
             } else if (cmd === 'help') {
                 const lines = COMMANDS.help()
                 this.output.push({ text: lines[0], type: 'out' })
-                const cmdNames = ['experience', 'skills', 'education', 'projects', 'links', 'clear']
+                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'clear']
                 const sid = ++this.selectionCounter
                 lines.slice(1).forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -577,6 +585,13 @@ export default {
 
     :deep(a.terminal-link) { color: var(--t-text); }
     :deep(.dim)            { color: var(--t-text); }
+
+    @media (pointer: coarse) {
+        color: var(--t-link);
+        :deep(a.terminal-link) {
+            color: var(--t-link);
+        }
+    }
 }
 
 .sel-hint {

@@ -22,8 +22,8 @@ export default {
 
 @media (min-width: 768px) {
     .page {
-        padding-top: clamp(2rem, 8vh, 10rem) !important;
-        padding-bottom: clamp(2rem, 8vh, 10rem) !important;
+        padding-top: clamp(2rem, 6vh, 8rem) !important;
+        padding-bottom: clamp(2rem, 6vh, 8rem) !important;
     }
 }
 </style>
