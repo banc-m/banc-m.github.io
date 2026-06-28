@@ -335,6 +335,38 @@ export default {
         window.removeEventListener('pageshow', this._onPageShow)
     },
     methods: {
+        async revealByGroup (lines) {
+            this.typewriterActive = true
+            const delay = ms => new Promise(r => setTimeout(r, ms))
+            const GAP = '<span class="entry-gap"></span>'
+
+            const groups = []
+            let current = []
+            for (const line of lines) {
+                if (line === GAP) { if (current.length) { groups.push(current); current = [] } }
+                else current.push(line)
+            }
+            if (current.length) groups.push(current)
+
+            for (let gi = 0; gi < groups.length; gi++) {
+                if (this.typewriterAbort) {
+                    for (let r = gi; r < groups.length; r++) {
+                        groups[r].forEach(l => this.output.push({ text: l, type: 'out' }))
+                        this.output.push({ text: GAP, type: 'out' })
+                    }
+                    break
+                }
+                groups[gi].forEach(l => this.output.push({ text: l, type: 'out' }))
+                this.output.push({ text: GAP, type: 'out' })
+                this.$nextTick(() => { const b = this.$refs.body; if (b) b.scrollTop = b.scrollHeight })
+                if (gi < groups.length - 1) await delay(70)
+            }
+
+            this.output.push({ text: '', type: 'out' })
+            this.typewriterActive = false
+            this.typewriterAbort = false
+            this.$nextTick(() => { const b = this.$refs.body; if (b) b.scrollTop = b.scrollHeight })
+        },
         async typewriteLines (lines) {
             this.typewriterActive = true
             const delay = ms => new Promise(r => setTimeout(r, ms))
@@ -526,6 +558,9 @@ export default {
             } else if (cmd === 'about' || cmd === 'skills' || cmd === 'education') {
                 await this.runCmdAnim(`running ${cmd}`)
                 await this.typewriteLines(COMMANDS[cmd]())
+            } else if (cmd === 'cv') {
+                await this.runCmdAnim('running cv')
+                await this.revealByGroup(renderCv())
             } else if (COMMANDS[cmd]) {
                 await this.runCmdAnim(`running ${cmd}`)
                 const lines = COMMANDS[cmd]()
