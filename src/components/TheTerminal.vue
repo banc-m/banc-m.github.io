@@ -28,11 +28,21 @@
                         </template>
                         <span v-else :class="['text', line.type]" v-html="line.text"></span>
                     </div>
-                    <div v-if="selection.active" class="sel-hint" v-html="selHint"></div>
-                    <div v-else class="input-line">
-                        <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
-                        <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span>
-                    </div>
+                    <template v-if="cmdAnim.active">
+                        <div class="cmd-anim-line">
+                            <span class="cmd-anim-arrow">▸&nbsp;</span>
+                            <span class="cmd-anim-label">{{ cmdAnim.label }}...</span>
+                            <span class="cmd-anim-bar" v-html="cmdAnimBar"></span>
+                            <span class="cmd-anim-spinner">{{ cmdAnimSpinnerChar }}</span>
+                        </div>
+                    </template>
+                    <template v-else>
+                        <div v-if="selection.active" class="sel-hint" v-html="selHint"></div>
+                        <div v-else class="input-line">
+                            <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
+                            <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span>
+                        </div>
+                    </template>
                 </template>
             </div>
             <input
@@ -224,6 +234,7 @@ export default {
             bootProgress: 0,
             bootSpinnerFrame: 0,
             bootReady: false,
+            cmdAnim: { active: false, label: '', progress: 0, spinnerFrame: 0 },
             current: '',
             output: getWelcome().map(text => ({ text, type: 'info' })),
             history: [],
@@ -246,6 +257,15 @@ export default {
             const filled = Math.round(this.bootProgress / 100 * total)
             const empty = total - filled
             return `<span class="boot-bar-fill">${'█'.repeat(filled)}</span><span class="boot-bar-empty">${'░'.repeat(empty)}</span> ${String(this.bootProgress).padStart(3)}%`
+        },
+        cmdAnimSpinnerChar () {
+            return ['|', '/', '─', '\\'][this.cmdAnim.spinnerFrame]
+        },
+        cmdAnimBar () {
+            const total = 14
+            const filled = Math.round(this.cmdAnim.progress / 100 * total)
+            const empty = total - filled
+            return `<span class="boot-bar-fill">${'█'.repeat(filled)}</span><span class="boot-bar-empty">${'░'.repeat(empty)}</span>`
         },
         selHint () {
             if (this.isTouch) return '<i class="fas fa-hand-pointer"></i> tap an item to open'
@@ -277,6 +297,25 @@ export default {
         window.removeEventListener('pageshow', this._onPageShow)
     },
     methods: {
+        async runCmdAnim (label) {
+            const delay = ms => new Promise(r => setTimeout(r, ms))
+            this.cmdAnim = { active: true, label, progress: 0, spinnerFrame: 0 }
+            this.$nextTick(() => { const b = this.$refs.body; if (b) b.scrollTop = b.scrollHeight })
+
+            const spinInterval = setInterval(() => {
+                this.cmdAnim.spinnerFrame = (this.cmdAnim.spinnerFrame + 1) % 4
+            }, 80)
+
+            const steps = 10
+            for (let i = 1; i <= steps; i++) {
+                await delay(32)
+                this.cmdAnim.progress = Math.round(i / steps * 100)
+            }
+
+            clearInterval(spinInterval)
+            await delay(60)
+            this.cmdAnim.active = false
+        },
         async runBoot () {
             const delay = ms => new Promise(r => setTimeout(r, ms))
             const spinInterval = setInterval(() => {
@@ -324,7 +363,7 @@ export default {
                 if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
             })
         },
-        submit () {
+        async submit () {
             if (this.selection.active) {
                 this.openSelected()
                 return
@@ -341,6 +380,7 @@ export default {
             if (cmd === 'clear') {
                 this.output = []
             } else if (cmd === 'help') {
+                await this.runCmdAnim('running help')
                 const lines = COMMANDS.help()
                 this.output.push({ text: lines[0], type: 'out' })
                 const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'skin', 'clear']
@@ -352,6 +392,7 @@ export default {
                 this.output.push({ text: '', type: 'out' })
                 this.enterSelection(cmdNames.map(c => ({ label: c, cmd: c })), sid)
             } else if (cmd === 'projects') {
+                await this.runCmdAnim('running projects')
                 const sid = ++this.selectionCounter
                 renderProjects().forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -360,6 +401,7 @@ export default {
                 this.output.push({ text: '', type: 'out' })
                 this.enterSelection(DATA.projects.map(p => ({ label: p.name, sublabel: p.desc, url: p.url, external: !!p.external })), sid)
             } else if (cmd === 'links') {
+                await this.runCmdAnim('running links')
                 const sid = ++this.selectionCounter
                 renderLinks().forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -372,6 +414,7 @@ export default {
                 if (arg) {
                     const found = SKINS.find(s => s.name === arg)
                     if (found) {
+                        await this.runCmdAnim(`applying skin: ${found.name}`)
                         this.applySkin(found.name)
                         this.output.push({ text: `skin set to <span class="accent">${found.name}</span>`, type: 'out' })
                         this.output.push({ text: '', type: 'out' })
@@ -381,6 +424,7 @@ export default {
                         this.output.push({ text: '', type: 'out' })
                     }
                 } else {
+                    await this.runCmdAnim('loading skins')
                     const sid = ++this.selectionCounter
                     renderSkins(this.skin).forEach((text, i) => {
                         this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -390,6 +434,7 @@ export default {
                     this.enterSelection(SKINS.map(s => ({ label: s.name, cmd: `skin ${s.name}` })), sid)
                 }
             } else if (COMMANDS[cmd]) {
+                await this.runCmdAnim(`running ${cmd}`)
                 const lines = COMMANDS[cmd]()
                 lines.forEach(l => this.output.push({ text: l, type: 'out' }))
                 this.output.push({ text: '', type: 'out' })
@@ -779,6 +824,29 @@ export default {
     color: var(--t-link);
     text-decoration: none;
     &:hover { text-decoration: underline; color: var(--t-link-hover); }
+}
+
+// ── Command animation ─────────────────────────────────────────────────────────
+
+.cmd-anim-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--t-dim);
+}
+
+.cmd-anim-arrow { color: var(--t-accent); }
+
+.cmd-anim-bar {
+    font-size: 0.88em;
+    :deep(.boot-bar-fill)  { color: var(--t-accent); }
+    :deep(.boot-bar-empty) { color: var(--t-dim); opacity: 0.3; }
+}
+
+.cmd-anim-spinner {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
 }
 
 // ── Boot screen ──────────────────────────────────────────────────────────────
