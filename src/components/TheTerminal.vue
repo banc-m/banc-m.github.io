@@ -9,7 +9,13 @@
             </div>
             <div class="terminal-body" ref="body">
                 <div v-if="loading" class="boot-screen">
-                    <div class="boot-header">NUVMO TERMINAL <span class="boot-ver">v1.0.0</span></div>
+                    <div class="boot-logo">
+                        <div>█   █  █   █  █   █  █   █   ███ </div>
+                        <div>██  █  █   █  █   █  ██ ██  █   █</div>
+                        <div>█ █ █  █   █  █   █  █ █ █  █   █</div>
+                        <div>█  ██  █   █   █ █   █   █  █   █</div>
+                        <div>█   █   ███     █    █   █   ███ </div>
+                    </div>
                     <div class="boot-sep">────────────────────────────────────────</div>
                     <div class="boot-item" v-for="(item, i) in bootItems.slice(0, bootVisibleCount)" :key="i">
                         <span class="boot-item-label">{{ item.label }}...</span>
@@ -177,18 +183,6 @@ function renderLinks () {
     )
 }
 
-function renderBanner () {
-    return [
-        '<span class="accent">█   █  █   █  █   █  █   █   ███ </span>',
-        '<span class="accent">██  █  █   █  █   █  ██ ██  █   █</span>',
-        '<span class="accent">█ █ █  █   █  █   █  █ █ █  █   █</span>',
-        '<span class="accent">█  ██  █   █   █ █   █   █  █   █</span>',
-        '<span class="accent">█   █   ███     █    █   █   ███ </span>',
-        '',
-        '<span class="dim">martin stewart — web designer &amp; developer</span>',
-    ]
-}
-
 function grepContent (term) {
     const re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
     const highlight = s => s.replace(re, m => `<span class="accent">${m}</span>`)
@@ -292,7 +286,6 @@ const COMMANDS = {
             '<span class="accent">projects</span>     — things I\'ve built',
             '<span class="accent">links</span>        — profiles &amp; socials',
             '<span class="accent">open</span>         — open a project  <span class="dim">e.g. open ghosting</span>',
-            '<span class="accent">banner</span>       — display ASCII logo',
             '<span class="accent">grep</span>         — search all content  <span class="dim">e.g. grep vue</span>',
             '<span class="accent">skin</span>         — change the terminal skin',
             '<span class="accent">history</span>      — command history',
@@ -394,7 +387,7 @@ export default {
                 return matches.length === 1 ? matches[0].slice(arg.length) : ''
             }
 
-            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'history', 'date', 'sudo', 'banner', 'grep', 'search']
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'history', 'date', 'sudo', 'grep', 'search']
             const matches = allCommands.filter(c => c.startsWith(lower) && c !== lower)
             return matches.length === 1 ? matches[0].slice(lower.length) : ''
         }
@@ -592,7 +585,7 @@ export default {
                 await this.runCmdAnim('running help')
                 const lines = COMMANDS.help()
                 this.output.push({ text: lines[0], type: 'out' })
-                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'open', 'banner', 'grep', 'skin', 'history', 'date', 'sudo', 'clear']
+                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'open', 'grep', 'skin', 'history', 'date', 'sudo', 'clear']
                 const sid = ++this.selectionCounter
                 lines.slice(1).forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -671,9 +664,6 @@ export default {
             } else if (cmd.startsWith('sudo')) {
                 this.output.push({ text: 'Permission denied. Also: nice try.', type: 'err' })
                 this.output.push({ text: '', type: 'out' })
-            } else if (cmd === 'banner') {
-                await this.runCmdAnim('rendering banner')
-                await this.typewriteLines(renderBanner())
             } else if (cmd === 'open' || cmd.startsWith('open ')) {
                 const arg = cmd === 'open' ? '' : cmd.slice(5).trim()
                 if (!arg) {
@@ -831,7 +821,7 @@ export default {
                 return
             }
 
-            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'history', 'date', 'sudo', 'banner', 'grep', 'search']
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'history', 'date', 'sudo', 'grep', 'search']
             const matches = cmd === '' ? allCommands : allCommands.filter(c => c.startsWith(cmd))
 
             if (matches.length === 0) return
@@ -1192,11 +1182,13 @@ export default {
     line-height: 1.7;
 }
 
-.boot-header {
+.boot-logo {
     color: var(--t-accent);
-    letter-spacing: 0.06em;
-    font-size: 0.95em;
-    margin-bottom: 2px;
+    font-size: 0.72rem;
+    line-height: 1.45;
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+    white-space: pre;
 }
 
 .boot-ver {
