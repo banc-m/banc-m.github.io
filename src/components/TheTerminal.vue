@@ -8,7 +8,7 @@
                 <span class="bar-title">Martin Stewart <span class="title-dash">—</span><br class="title-break"> web designer &amp; developer</span>
             </div>
             <div class="terminal-body" ref="body">
-                <div v-if="loading" :class="['boot-screen', { 'boot-screen--fading': bootFading }]">
+                <div v-if="loading" class="boot-screen">
                     <div class="boot-header">NUVMO TERMINAL <span class="boot-ver">v1.0.0</span></div>
                     <div class="boot-sep">────────────────────────────────────────</div>
                     <div class="boot-item" v-for="(item, i) in bootItems.slice(0, bootVisibleCount)" :key="i">
@@ -258,7 +258,6 @@ export default {
         return {
             skin: getInitialSkin(),
             loading: true,
-            bootFading: false,
             bootItems: [
                 { label: 'Initialising system',      done: false },
                 { label: 'Loading kernel modules',   done: false },
@@ -449,9 +448,6 @@ export default {
             clearInterval(spinInterval)
             this.bootReady = true
             await delay(650)
-            this.bootFading = true
-            await delay(280)
-
             this.output.push({ text: '<span class="accent">NUVMO TERMINAL</span> <span class="dim">v1.0.0</span>', type: 'out' })
             this.output.push({ text: '<span class="dim">────────────────────────────────────────</span>', type: 'out' })
             this.bootItems.forEach(item => {
@@ -992,12 +988,7 @@ export default {
 // ── Boot screen ──────────────────────────────────────────────────────────────
 
 .boot-screen {
-    padding: 20px 24px;
-    line-height: 1.9;
-    opacity: 1;
-    transition: opacity 0.28s ease;
-
-    &.boot-screen--fading { opacity: 0; }
+    line-height: 1.7;
 }
 
 .boot-header {
