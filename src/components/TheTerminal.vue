@@ -8,19 +8,32 @@
                 <span class="bar-title">Martin Stewart <span class="title-dash">—</span><br class="title-break"> web designer &amp; developer</span>
             </div>
             <div class="terminal-body" ref="body">
-                <div class="line" v-for="(line, i) in output" :key="i">
-                    <span v-if="line.prompt" class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
-                    <template v-if="line.selectable">
-                        <span class="sel-arrow" :class="{ 'sel-arrow--on': selection.active && selection.id === line.selectionId && selection.current === line.selectIndex }">▸</span>
-                        <span :class="['text', line.type, { 'sel-line-active': selection.active && selection.id === line.selectionId && selection.current === line.selectIndex }]" @click.stop="activateItem(line.selectIndex, line.selectionId, $event)" v-html="line.text"></span>
-                    </template>
-                    <span v-else :class="['text', line.type]" v-html="line.text"></span>
+                <div v-if="loading" :class="['boot-screen', { 'boot-screen--fading': bootFading }]">
+                    <div class="boot-header">NUVMO TERMINAL <span class="boot-ver">v1.0.0</span></div>
+                    <div class="boot-sep">────────────────────────────────────────</div>
+                    <div class="boot-item" v-for="(item, i) in bootItems.slice(0, bootVisibleCount)" :key="i">
+                        <span class="boot-item-label">{{ item.label }}...</span>
+                        <span class="boot-ok" v-if="item.done">&nbsp;OK</span>
+                        <span class="boot-pending" v-else>{{ bootSpinnerChar }}</span>
+                    </div>
+                    <div class="boot-progress-line" v-if="bootProgress > 0" v-html="bootProgressDisplay"></div>
+                    <div class="boot-ready" v-if="bootReady">SYSTEM READY.</div>
                 </div>
-                <div v-if="selection.active" class="sel-hint" v-html="selHint"></div>
-                <div v-else class="input-line">
-                    <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
-                    <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span>
-                </div>
+                <template v-else>
+                    <div class="line" v-for="(line, i) in output" :key="i">
+                        <span v-if="line.prompt" class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
+                        <template v-if="line.selectable">
+                            <span class="sel-arrow" :class="{ 'sel-arrow--on': selection.active && selection.id === line.selectionId && selection.current === line.selectIndex }">▸</span>
+                            <span :class="['text', line.type, { 'sel-line-active': selection.active && selection.id === line.selectionId && selection.current === line.selectIndex }]" @click.stop="activateItem(line.selectIndex, line.selectionId, $event)" v-html="line.text"></span>
+                        </template>
+                        <span v-else :class="['text', line.type]" v-html="line.text"></span>
+                    </div>
+                    <div v-if="selection.active" class="sel-hint" v-html="selHint"></div>
+                    <div v-else class="input-line">
+                        <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
+                        <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span>
+                    </div>
+                </template>
             </div>
             <input
                 ref="input"
@@ -198,6 +211,19 @@ export default {
     data () {
         return {
             skin: getInitialSkin(),
+            loading: true,
+            bootFading: false,
+            bootItems: [
+                { label: 'Initialising system',      done: false },
+                { label: 'Loading kernel modules',   done: false },
+                { label: 'Mounting filesystems',     done: false },
+                { label: 'Starting terminal daemon', done: false },
+                { label: 'Loading user profile',     done: false },
+            ],
+            bootVisibleCount: 0,
+            bootProgress: 0,
+            bootSpinnerFrame: 0,
+            bootReady: false,
             current: '',
             output: getWelcome().map(text => ({ text, type: 'info' })),
             history: [],
@@ -212,6 +238,15 @@ export default {
         skinClass () {
             return this.skin !== 'dark' ? `terminal--skin-${this.skin}` : ''
         },
+        bootSpinnerChar () {
+            return ['|', '/', '─', '\\'][this.bootSpinnerFrame]
+        },
+        bootProgressDisplay () {
+            const total = 28
+            const filled = Math.round(this.bootProgress / 100 * total)
+            const empty = total - filled
+            return `<span class="boot-bar-fill">${'█'.repeat(filled)}</span><span class="boot-bar-empty">${'░'.repeat(empty)}</span> ${String(this.bootProgress).padStart(3)}%`
+        },
         selHint () {
             if (this.isTouch) return '<i class="fas fa-hand-pointer"></i> tap an item to open'
             const action = this.selection.items.length && this.selection.items[0].cmd ? 'run' : 'open'
@@ -219,8 +254,8 @@ export default {
         }
     },
     mounted () {
-        this.$nextTick(() => this.$refs.input.focus())
         this.applySkin(this.skin)
+        this.runBoot()
         this._onWinBlur  = () => { this.focused = false }
         this._onWinFocus = () => { this.focused = true }
         this._onPageShow = (e) => {
@@ -242,6 +277,30 @@ export default {
         window.removeEventListener('pageshow', this._onPageShow)
     },
     methods: {
+        async runBoot () {
+            const delay = ms => new Promise(r => setTimeout(r, ms))
+            const spinInterval = setInterval(() => {
+                this.bootSpinnerFrame = (this.bootSpinnerFrame + 1) % 4
+            }, 90)
+
+            await delay(150)
+
+            for (let i = 0; i < this.bootItems.length; i++) {
+                this.bootVisibleCount = i + 1
+                await delay(220 + Math.floor(Math.random() * 280))
+                this.bootItems[i].done = true
+                this.bootProgress = Math.round((i + 1) / this.bootItems.length * 100)
+            }
+
+            await delay(350)
+            clearInterval(spinInterval)
+            this.bootReady = true
+            await delay(650)
+            this.bootFading = true
+            await delay(280)
+            this.loading = false
+            this.$nextTick(() => this.$refs.input.focus())
+        },
         applySkin (name) {
             this.skin = name
             localStorage.setItem('skin', name)
@@ -720,5 +779,71 @@ export default {
     color: var(--t-link);
     text-decoration: none;
     &:hover { text-decoration: underline; color: var(--t-link-hover); }
+}
+
+// ── Boot screen ──────────────────────────────────────────────────────────────
+
+.boot-screen {
+    padding: 20px 24px;
+    line-height: 1.9;
+    opacity: 1;
+    transition: opacity 0.28s ease;
+
+    &.boot-screen--fading { opacity: 0; }
+}
+
+.boot-header {
+    color: var(--t-accent);
+    letter-spacing: 0.06em;
+    font-size: 0.95em;
+    margin-bottom: 2px;
+}
+
+.boot-ver {
+    color: var(--t-dim);
+}
+
+.boot-sep {
+    color: var(--t-dim);
+    margin-bottom: 8px;
+    letter-spacing: 0;
+    opacity: 0.5;
+}
+
+.boot-item {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    color: var(--t-text);
+}
+
+.boot-item-label {
+    min-width: 260px;
+}
+
+.boot-ok {
+    color: var(--t-prompt);
+}
+
+.boot-pending {
+    color: var(--t-dim);
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+}
+
+.boot-progress-line {
+    margin-top: 12px;
+    font-size: 0.9em;
+    letter-spacing: 0.02em;
+
+    :deep(.boot-bar-fill)  { color: var(--t-accent); }
+    :deep(.boot-bar-empty) { color: var(--t-dim); opacity: 0.4; }
+}
+
+.boot-ready {
+    margin-top: 10px;
+    color: var(--t-prompt);
+    letter-spacing: 0.08em;
 }
 </style>
