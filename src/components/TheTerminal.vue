@@ -273,7 +273,7 @@ export default {
             typewriterActive: false,
             typewriterAbort: false,
             current: '',
-            output: [],
+            output: getWelcome().map(text => ({ text, type: 'info' })),
             history: [],
             historyIndex: -1,
             selection: { active: false, items: [], current: 0, id: 0 },
@@ -448,16 +448,6 @@ export default {
             clearInterval(spinInterval)
             this.bootReady = true
             await delay(650)
-            this.output.push({ text: '<span class="accent">NUVMO TERMINAL</span> <span class="dim">v1.0.0</span>', type: 'out' })
-            this.output.push({ text: '<span class="dim">────────────────────────────────────────</span>', type: 'out' })
-            this.bootItems.forEach(item => {
-                this.output.push({ text: `${item.label}... <span class="ok"> OK</span>`, type: 'out' })
-            })
-            this.output.push({ text: `<span class="accent">${'█'.repeat(28)}</span> 100%`, type: 'out' })
-            this.output.push({ text: '<span class="ok">SYSTEM READY.</span>', type: 'out' })
-            this.output.push({ text: '', type: 'out' })
-            getWelcome().forEach(text => this.output.push({ text, type: 'info' }))
-
             this.loading = false
             this.$nextTick(() => this.$refs.input.focus())
         },
@@ -954,7 +944,6 @@ export default {
 
 :deep(.accent)     { color: var(--t-accent); }
 :deep(.dim)        { color: var(--t-dim); }
-:deep(.ok)         { color: var(--t-prompt); }
 :deep(.entry-gap)  { display: block; height: 0.6em; }
 :deep(a.terminal-link) {
     color: var(--t-link);
