@@ -523,7 +523,7 @@ export default {
                     this.output.push({ text: '', type: 'out' })
                     this.enterSelection(SKINS.map(s => ({ label: s.name, cmd: `skin ${s.name}` })), sid)
                 }
-            } else if (cmd === 'about' || cmd === 'skills' || cmd === 'education' || cmd === 'cv') {
+            } else if (cmd === 'about' || cmd === 'skills' || cmd === 'education') {
                 await this.runCmdAnim(`running ${cmd}`)
                 await this.typewriteLines(COMMANDS[cmd]())
             } else if (COMMANDS[cmd]) {
