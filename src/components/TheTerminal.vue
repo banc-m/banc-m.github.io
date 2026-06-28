@@ -372,6 +372,36 @@ export default {
         },
         tabComplete () {
             const cmd = this.current.toLowerCase()
+
+            // skin <name> sub-completion
+            if (cmd === 'skin ' || (cmd.startsWith('skin ') && cmd.length > 5)) {
+                const arg = cmd.slice(5)
+                const skinNames = SKINS.map(s => s.name)
+                const matches = arg === '' ? skinNames : skinNames.filter(n => n.startsWith(arg))
+
+                if (matches.length === 0) return
+
+                if (matches.length === 1) {
+                    this.current = `skin ${matches[0]}`
+                    return
+                }
+
+                const prefix = matches.reduce((acc, n) => {
+                    let i = 0
+                    while (i < acc.length && i < n.length && acc[i] === n[i]) i++
+                    return acc.slice(0, i)
+                })
+
+                if (prefix.length > arg.length) {
+                    this.current = `skin ${prefix}`
+                    return
+                }
+
+                this.output.push({ text: matches.map(m => `<span class="accent">${m}</span>`).join('    '), type: 'out' })
+                this.$nextTick(() => { this.$refs.body.scrollTop = this.$refs.body.scrollHeight })
+                return
+            }
+
             const allCommands = [...Object.keys(COMMANDS), 'skin', 'clear']
             const matches = cmd === '' ? allCommands : allCommands.filter(c => c.startsWith(cmd))
 
