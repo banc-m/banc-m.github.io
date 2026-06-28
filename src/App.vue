@@ -73,15 +73,9 @@ body {
 	}
 }
 
-@keyframes fade-in {
-	from { opacity: 0; }
-	to   { opacity: 1; }
-}
-
 .app {
 	overflow-x: hidden;
 	min-height: 100vh;
-	animation: fade-in 2s;
 }
 
 a {

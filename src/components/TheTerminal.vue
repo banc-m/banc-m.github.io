@@ -690,11 +690,6 @@ export default {
     50% { opacity: 0; }
 }
 
-@keyframes slide-up {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
 .terminal-wrap {
     width: 100%;
     max-width: 900px;
@@ -702,7 +697,6 @@ export default {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    animation: slide-up 0.5s 0.1s both;
     cursor: text;
 }
 
