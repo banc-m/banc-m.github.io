@@ -16,6 +16,7 @@
                         <div>█  ██  █   █   █ █   █   █  █   █</div>
                         <div>█   █   ███     █    █   █   ███ </div>
                     </div>
+                    <div class="boot-header">NUVMO TERMINAL <span class="boot-ver">v1.0.0</span></div>
                     <div class="boot-sep">────────────────────────────────────────</div>
                     <div class="boot-item" v-for="(item, i) in bootItems.slice(0, bootVisibleCount)" :key="i">
                         <span class="boot-item-label">{{ item.label }}...</span>
@@ -1186,9 +1187,16 @@ export default {
     color: var(--t-accent);
     font-size: 0.72rem;
     line-height: 1.45;
-    letter-spacing: 0.02em;
-    margin-bottom: 10px;
+    letter-spacing: 0;
+    margin-bottom: 6px;
     white-space: pre;
+}
+
+.boot-header {
+    color: var(--t-accent);
+    letter-spacing: 0.06em;
+    font-size: 0.95em;
+    margin-bottom: 2px;
 }
 
 .boot-ver {
