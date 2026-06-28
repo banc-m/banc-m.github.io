@@ -1,10 +1,10 @@
 <template>
-    <div class="terminal-wrap px-3" @click="focusInput">
+    <div class="terminal-wrap px-3" :class="{ 'terminal-wrap--fullscreen': fullscreen }" @click="focusInput">
         <div :class="['terminal', skinClass]">
             <div class="terminal-bar">
-                <span class="dot dot-red"></span>
-                <span class="dot dot-yellow"></span>
-                <span class="dot dot-green"></span>
+                <span class="dot dot-red" @click.stop="dotRed" title="clear"></span>
+                <span class="dot dot-yellow" @click.stop="dotYellow"></span>
+                <span class="dot dot-green" @click.stop="dotGreen" title="fullscreen"></span>
                 <span class="bar-title">Martin Stewart <span class="title-dash">—</span><br class="title-break"> web designer &amp; developer</span>
             </div>
             <div class="terminal-body" ref="body">
@@ -40,7 +40,7 @@
                         <div v-if="selection.active" class="sel-hint" v-html="selHint"></div>
                         <div v-else class="input-line">
                             <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
-                            <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span>
+                            <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span><span v-if="ghostSuggestion" class="ghost">{{ ghostSuggestion }}</span>
                         </div>
                     </template>
                 </template>
@@ -177,6 +177,67 @@ function renderLinks () {
     )
 }
 
+function renderBanner () {
+    return [
+        '<span class="accent">█   █  █   █  █   █  █   █   ███ </span>',
+        '<span class="accent">██  █  █   █  █   █  ██ ██  █   █</span>',
+        '<span class="accent">█ █ █  █   █  █   █  █ █ █  █   █</span>',
+        '<span class="accent">█  ██  █   █   █ █   █   █  █   █</span>',
+        '<span class="accent">█   █   ███     █    █   █   ███ </span>',
+        '',
+        '<span class="dim">martin stewart — web designer &amp; developer</span>',
+    ]
+}
+
+function grepContent (term) {
+    const re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+    const highlight = s => s.replace(re, m => `<span class="accent">${m}</span>`)
+    const tl = term.toLowerCase()
+    const results = []
+
+    const about = renderAbout()[0]
+    if (about.toLowerCase().includes(tl)) {
+        results.push('<span class="dim">about:</span>')
+        results.push(highlight(about))
+        results.push('<span class="entry-gap"></span>')
+    }
+
+    DATA.cv.forEach(e => {
+        if ([e.title, e.place, e.period, e.desc].join(' ').toLowerCase().includes(tl)) {
+            results.push('<span class="dim">cv:</span>')
+            results.push(highlight(`${e.title} — ${e.place}`) + `  <span class="dim">${e.period}</span>`)
+            if (e.desc) results.push(highlight(e.desc))
+            results.push('<span class="entry-gap"></span>')
+        }
+    })
+
+    Object.entries(DATA.skills).forEach(([cat, items]) => {
+        if ([cat, ...items].join(' ').toLowerCase().includes(tl)) {
+            results.push('<span class="dim">skills:</span>')
+            results.push(highlight(`${cat}: ${items.join(', ')}`))
+            results.push('<span class="entry-gap"></span>')
+        }
+    })
+
+    DATA.education.forEach(e => {
+        if ([e.title, e.place, e.period].join(' ').toLowerCase().includes(tl)) {
+            results.push('<span class="dim">education:</span>')
+            results.push(highlight(`${e.title} — ${e.place}`) + `  <span class="dim">${e.period}</span>`)
+            results.push('<span class="entry-gap"></span>')
+        }
+    })
+
+    DATA.projects.forEach(p => {
+        if ([p.name, p.desc].join(' ').toLowerCase().includes(tl)) {
+            results.push('<span class="dim">projects:</span>')
+            results.push(highlight(`${p.name} — ${p.desc}`))
+            results.push('<span class="entry-gap"></span>')
+        }
+    })
+
+    return results
+}
+
 function renderSkins (currentSkin) {
     return SKINS.map(s => {
         const active = s.name === currentSkin ? ' <span class="dim">(active)</span>' : ''
@@ -230,7 +291,13 @@ const COMMANDS = {
             '<span class="accent">education</span>    — academic background',
             '<span class="accent">projects</span>     — things I\'ve built',
             '<span class="accent">links</span>        — profiles &amp; socials',
+            '<span class="accent">open</span>         — open a project  <span class="dim">e.g. open ghosting</span>',
+            '<span class="accent">banner</span>       — display ASCII logo',
+            '<span class="accent">grep</span>         — search all content  <span class="dim">e.g. grep vue</span>',
             '<span class="accent">skin</span>         — change the terminal skin',
+            '<span class="accent">history</span>      — command history',
+            '<span class="accent">date</span>         — show current date &amp; time',
+            '<span class="accent">sudo</span>         — nice try',
             '<span class="accent">clear</span>        — clear the terminal',
         ]
     },
@@ -274,8 +341,9 @@ export default {
             typewriterAbort: false,
             current: '',
             output: getWelcome().map(text => ({ text, type: 'info' })),
-            history: [],
+            history: JSON.parse(localStorage.getItem('cmdHistory') || '[]'),
             historyIndex: -1,
+            fullscreen: false,
             selection: { active: false, items: [], current: 0, id: 0 },
             selectionCounter: 0,
             focused: true,
@@ -308,6 +376,27 @@ export default {
             if (this.isTouch) return '<i class="fas fa-hand-pointer"></i> tap an item to open'
             const action = this.selection.items.length && this.selection.items[0].cmd ? 'run' : 'open'
             return `↑↓ navigate  ·  ↵ ${action}  ·  esc cancel`
+        },
+        ghostSuggestion () {
+            const cmd = this.current
+            if (!cmd || this.selection.active) return ''
+            const lower = cmd.toLowerCase()
+
+            if (lower.startsWith('open ') && lower.length > 5) {
+                const arg = lower.slice(5)
+                const matches = DATA.projects.map(p => p.name).filter(n => n.startsWith(arg))
+                return matches.length === 1 ? matches[0].slice(arg.length) : ''
+            }
+
+            if (lower.startsWith('skin ') && lower.length > 5) {
+                const arg = lower.slice(5)
+                const matches = SKINS.map(s => s.name).filter(n => n.startsWith(arg))
+                return matches.length === 1 ? matches[0].slice(arg.length) : ''
+            }
+
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'history', 'date', 'sudo', 'banner', 'grep', 'search']
+            const matches = allCommands.filter(c => c.startsWith(lower) && c !== lower)
+            return matches.length === 1 ? matches[0].slice(lower.length) : ''
         }
     },
     mounted () {
@@ -493,6 +582,7 @@ export default {
 
             this.output.push({ prompt: true, text: cmd, type: 'cmd' })
             this.history.unshift(cmd)
+            localStorage.setItem('cmdHistory', JSON.stringify(this.history.slice(0, 50)))
             this.historyIndex = -1
             this.current = ''
 
@@ -502,7 +592,7 @@ export default {
                 await this.runCmdAnim('running help')
                 const lines = COMMANDS.help()
                 this.output.push({ text: lines[0], type: 'out' })
-                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'skin', 'clear']
+                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'open', 'banner', 'grep', 'skin', 'history', 'date', 'sudo', 'clear']
                 const sid = ++this.selectionCounter
                 lines.slice(1).forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -558,6 +648,73 @@ export default {
             } else if (cmd === 'cv') {
                 await this.runCmdAnim('running cv')
                 await this.revealByGroup(renderCv())
+            } else if (cmd === 'history') {
+                await this.runCmdAnim('loading history')
+                const hist = this.history.filter(h => h !== 'history')
+                if (!hist.length) {
+                    this.output.push({ text: 'no history yet', type: 'dim' })
+                } else {
+                    ;[...hist].reverse().forEach((entry, i) => {
+                        this.output.push({ text: `<span class="dim">${String(i + 1).padStart(3)}  </span>${entry}`, type: 'out' })
+                    })
+                }
+                this.output.push({ text: '', type: 'out' })
+            } else if (cmd === 'date') {
+                const now = new Date()
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                const hh = String(now.getHours()).padStart(2, '0')
+                const mm = String(now.getMinutes()).padStart(2, '0')
+                const ss = String(now.getSeconds()).padStart(2, '0')
+                this.output.push({ text: `<span class="accent">${days[now.getDay()]} ${String(now.getDate()).padStart(2, '0')} ${months[now.getMonth()]} ${now.getFullYear()} — ${hh}:${mm}:${ss}</span>`, type: 'out' })
+                this.output.push({ text: '', type: 'out' })
+            } else if (cmd.startsWith('sudo')) {
+                this.output.push({ text: 'Permission denied. Also: nice try.', type: 'err' })
+                this.output.push({ text: '', type: 'out' })
+            } else if (cmd === 'banner') {
+                await this.runCmdAnim('rendering banner')
+                await this.typewriteLines(renderBanner())
+            } else if (cmd === 'open' || cmd.startsWith('open ')) {
+                const arg = cmd === 'open' ? '' : cmd.slice(5).trim()
+                if (!arg) {
+                    await this.runCmdAnim('running projects')
+                    const sid = ++this.selectionCounter
+                    renderProjects().forEach((text, i) => {
+                        this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
+                        this.output.push({ text: '<span class="entry-gap"></span>', type: 'out' })
+                    })
+                    this.output.push({ text: '', type: 'out' })
+                    this.enterSelection(DATA.projects.map(p => ({ label: p.name, sublabel: p.desc, url: p.url, external: !!p.external })), sid)
+                } else {
+                    const project = DATA.projects.find(p => p.name === arg)
+                    if (project) {
+                        const url = project.url.startsWith('//') ? 'https:' + project.url : project.url
+                        if (project.external || project.url.startsWith('//')) {
+                            window.open(url, '_blank', 'noopener,noreferrer')
+                        } else {
+                            window.location.href = url
+                        }
+                    } else {
+                        this.output.push({ text: `project not found: ${arg}`, type: 'err' })
+                        this.output.push({ text: `try: ${DATA.projects.map(p => p.name).join(', ')}`, type: 'out' })
+                        this.output.push({ text: '', type: 'out' })
+                    }
+                }
+            } else if (cmd.startsWith('grep ') || cmd.startsWith('search ')) {
+                const term = cmd.startsWith('grep ') ? cmd.slice(5).trim() : cmd.slice(7).trim()
+                if (!term) {
+                    this.output.push({ text: 'usage: grep &lt;term&gt;', type: 'err' })
+                    this.output.push({ text: '', type: 'out' })
+                } else {
+                    await this.runCmdAnim(`searching for "${term}"`)
+                    const results = grepContent(term)
+                    if (!results.length) {
+                        this.output.push({ text: `no matches found for: ${term}`, type: 'dim' })
+                    } else {
+                        results.forEach(l => this.output.push({ text: l, type: 'out' }))
+                    }
+                    this.output.push({ text: '', type: 'out' })
+                }
             } else if (COMMANDS[cmd]) {
                 await this.runCmdAnim(`running ${cmd}`)
                 const lines = COMMANDS[cmd]()
@@ -597,10 +754,53 @@ export default {
             }
         },
         escapeKey () {
+            if (this.fullscreen) { this.fullscreen = false; return }
             if (this.selection.active) this.exitSelection()
+        },
+        dotRed () {
+            this.output = []
+            this.$refs.input.focus()
+        },
+        dotYellow () {
+            this.output.push({ text: 'What are you looking at?', type: 'dim' })
+            this.output.push({ text: '', type: 'out' })
+            this.$nextTick(() => { const b = this.$refs.body; if (b) b.scrollTop = b.scrollHeight })
+        },
+        dotGreen () {
+            this.fullscreen = !this.fullscreen
+            this.$nextTick(() => { const b = this.$refs.body; if (b) b.scrollTop = b.scrollHeight })
         },
         tabComplete () {
             const cmd = this.current.toLowerCase()
+
+            // open <name> sub-completion
+            if (cmd === 'open ' || (cmd.startsWith('open ') && cmd.length > 5)) {
+                const arg = cmd.slice(5)
+                const projectNames = DATA.projects.map(p => p.name)
+                const matches = arg === '' ? projectNames : projectNames.filter(n => n.startsWith(arg))
+
+                if (matches.length === 0) return
+
+                if (matches.length === 1) {
+                    this.current = `open ${matches[0]}`
+                    return
+                }
+
+                const prefix = matches.reduce((acc, n) => {
+                    let i = 0
+                    while (i < acc.length && i < n.length && acc[i] === n[i]) i++
+                    return acc.slice(0, i)
+                })
+
+                if (prefix.length > arg.length) {
+                    this.current = `open ${prefix}`
+                    return
+                }
+
+                this.output.push({ text: matches.map(m => `<span class="accent">${m}</span>`).join('    '), type: 'out' })
+                this.$nextTick(() => { this.$refs.body.scrollTop = this.$refs.body.scrollHeight })
+                return
+            }
 
             // skin <name> sub-completion
             if (cmd === 'skin ' || (cmd.startsWith('skin ') && cmd.length > 5)) {
@@ -631,7 +831,7 @@ export default {
                 return
             }
 
-            const allCommands = [...Object.keys(COMMANDS), 'skin', 'clear']
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'history', 'date', 'sudo', 'banner', 'grep', 'search']
             const matches = cmd === '' ? allCommands : allCommands.filter(c => c.startsWith(cmd))
 
             if (matches.length === 0) return
@@ -698,6 +898,14 @@ export default {
     display: flex;
     flex-direction: column;
     cursor: text;
+
+    &--fullscreen {
+        position: fixed;
+        inset: 0;
+        max-width: none;
+        z-index: 100;
+        padding: 0;
+    }
 }
 
 .terminal {
@@ -817,7 +1025,10 @@ export default {
     width: 12px;
     height: 12px;
     border-radius: 50%;
+    cursor: pointer;
+    transition: opacity 0.15s;
 
+    &:hover { opacity: 0.7; }
     &.dot-red    { background: #ff5f57; }
     &.dot-yellow { background: #febc2e; }
     &.dot-green  { background: #28c840; }
@@ -926,6 +1137,13 @@ export default {
     transition: background 0.25s;
 
     &--focused { animation: blink 1s step-start infinite; }
+}
+
+.ghost {
+    color: var(--t-dim);
+    opacity: 0.45;
+    pointer-events: none;
+    white-space: pre;
 }
 
 .hidden-input {
