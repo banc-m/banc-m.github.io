@@ -2,9 +2,18 @@
     <div class="terminal-wrap px-3" :class="{ 'terminal-wrap--fullscreen': fullscreen }" @click="focusInput">
         <div :class="['terminal', skinClass]">
             <div class="terminal-bar">
-                <span class="dot dot-red" @click.stop="dotRed" title="clear"></span>
-                <span class="dot dot-yellow" @click.stop="dotYellow"></span>
-                <span class="dot dot-green" @click.stop="dotGreen" title="fullscreen"></span>
+                <div class="dots">
+                    <span class="dot dot-red" @click.stop="dotRed">
+                        <i class="dot-icon fa-solid fa-xmark"></i>
+                    </span>
+                    <span class="dot dot-yellow" @click.stop="dotYellow">
+                        <i class="dot-icon fa-solid fa-minus"></i>
+                    </span>
+                    <span class="dot dot-green" @click.stop="dotGreen">
+                        <i v-if="!fullscreen" class="dot-icon fa-solid fa-up-right-and-down-left-from-center"></i>
+                        <i v-else class="dot-icon fa-solid fa-down-left-and-up-right-to-center"></i>
+                    </span>
+                </div>
                 <span class="bar-title">Martin Stewart <span class="title-dash">—</span><br class="title-break"> web designer &amp; developer</span>
             </div>
             <div class="terminal-body" ref="body">
@@ -1315,17 +1324,38 @@ export default {
     transition: background 0.25s, border-color 0.25s;
 }
 
+.dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    &:hover .dot-icon { opacity: 1; }
+}
+
 .dot {
     width: 12px;
     height: 12px;
     border-radius: 50%;
     cursor: pointer;
-    transition: opacity 0.15s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    &:hover { opacity: 0.7; }
     &.dot-red    { background: #ff5f57; }
     &.dot-yellow { background: #febc2e; }
     &.dot-green  { background: #28c840; }
+}
+
+.dot-icon {
+    font-size: 7px;
+    opacity: 0;
+    transition: opacity 0.1s;
+    pointer-events: none;
+
+    .dot-red &    { color: #4d0000; }
+    .dot-yellow & { color: #5a3c00; }
+    .dot-green &  { color: #003314; }
 }
 
 .bar-title {
