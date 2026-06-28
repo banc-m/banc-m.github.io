@@ -26,7 +26,7 @@
                 </div>
                 <template v-else>
                     <div class="line" v-for="(line, i) in output" :key="i">
-                        <span v-if="line.prompt" class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
+                        <span v-if="line.prompt" class="prompt">you@nuvmo<span v-if="line.promptCwd" class="prompt-cwd">:{{ line.promptCwd }}</span>&nbsp;❯&nbsp;</span>
                         <template v-if="line.selectable">
                             <span class="sel-arrow" :class="{ 'sel-arrow--on': selection.active && selection.id === line.selectionId && selection.current === line.selectIndex }">▸</span>
                             <span :class="['text', line.type, { 'sel-line-active': selection.active && selection.id === line.selectionId && selection.current === line.selectIndex }]" @click.stop="activateItem(line.selectIndex, line.selectionId, $event)" v-html="line.text"></span>
@@ -44,7 +44,7 @@
                     <template v-else>
                         <div v-if="selection.active" class="sel-hint" v-html="selHint"></div>
                         <div v-else class="input-line">
-                            <span class="prompt">you@nuvmo&nbsp;❯&nbsp;</span>
+                            <span class="prompt">you@nuvmo<span class="prompt-cwd">:{{ cwdDisplay }}</span>&nbsp;❯&nbsp;</span>
                             <span class="typed">{{ current }}</span><span class="cursor" :class="{ 'cursor--focused': focused }"></span><span v-if="ghostSuggestion" class="ghost">{{ ghostSuggestion }}</span>
                         </div>
                     </template>
@@ -132,6 +132,69 @@ function getInitialSkin () {
         localStorage.removeItem('theme')
     }
     return localStorage.getItem('skin') || 'dark'
+}
+
+const HOME = '/home/martin'
+
+const FS = {
+    '/': {
+        type: 'dir',
+        children: {
+            home: {
+                type: 'dir',
+                children: {
+                    martin: {
+                        type: 'dir',
+                        children: {
+                            readme: {
+                                type: 'file',
+                                content: `Welcome to nuvmo terminal — Martin Stewart's portfolio.\n\nLook around, or type 'help' for available commands.\n\n  ls          list files in this directory\n  cat readme  read this file\n  ./about.sh  run a script`
+                            },
+                            '.profile': {
+                                type: 'file',
+                                content: `# ~/.profile\nexport USER=martin\nexport SHELL=/bin/bash\nexport EDITOR=vim\nexport PAGER=less\n\nalias ll='ls -la'\nalias cls='clear'\n\n# nuvmo terminal v1.0.0`
+                            },
+                            'about.sh': {
+                                type: 'file',
+                                exec: 'about',
+                                content: `#!/bin/bash\n# Display Martin's bio\n\nabout`
+                            },
+                            'cv.sh': {
+                                type: 'file',
+                                exec: 'cv',
+                                content: `#!/bin/bash\n# Show full work history\n\ncv`
+                            },
+                            'skills.sh': {
+                                type: 'file',
+                                exec: 'skills',
+                                content: `#!/bin/bash\n# List technical skills\n\nskills`
+                            },
+                            'links.sh': {
+                                type: 'file',
+                                exec: 'links',
+                                content: `#!/bin/bash\n# Show social & profile links\n\nlinks`
+                            },
+                            projects: {
+                                type: 'dir',
+                                children: {
+                                    'list.sh': {
+                                        type: 'file',
+                                        exec: 'projects',
+                                        content: `#!/bin/bash\n# List all projects\n\nprojects`
+                                    },
+                                    'open.sh': {
+                                        type: 'file',
+                                        exec: 'open',
+                                        content: `#!/bin/bash\n# Open a project by name\n# Usage: ./open.sh <project-name>\n# e.g.   ./open.sh ghosting\n\nopen $1`
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
 }
 
 function renderCv () {
@@ -289,6 +352,10 @@ const COMMANDS = {
             '<span class="accent">skin</span>         — change the terminal skin',
             '<span class="accent">date</span>         — show current date &amp; time',
             '<span class="accent">clear</span>        — clear the terminal',
+            '<span class="accent">pwd</span>          — print working directory',
+            '<span class="accent">ls</span>           — list directory contents  <span class="dim">e.g. ls -la</span>',
+            '<span class="accent">cd</span>           — change directory  <span class="dim">e.g. cd projects</span>',
+            '<span class="accent">cat</span>          — read a file  <span class="dim">e.g. cat readme</span>',
         ]
     },
     about: renderAbout,
@@ -314,6 +381,7 @@ export default {
     data () {
         return {
             skin: getInitialSkin(),
+            cwd: '/home/martin',
             loading: true,
             bootItems: [
                 { label: 'Initialising system',      done: false },
@@ -374,6 +442,11 @@ export default {
             const action = this.selection.items.length && this.selection.items[0].cmd ? 'run' : 'open'
             return `↑↓ navigate  ·  ↵ ${action}  ·  esc cancel`
         },
+        cwdDisplay () {
+            if (this.cwd === HOME) return '~'
+            if (this.cwd.startsWith(HOME + '/')) return '~' + this.cwd.slice(HOME.length)
+            return this.cwd
+        },
         ghostSuggestion () {
             const cmd = this.current
             if (!cmd || this.selection.active) return ''
@@ -391,7 +464,29 @@ export default {
                 return matches.length === 1 ? matches[0].slice(arg.length) : ''
             }
 
-            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'date', 'grep', 'search']
+            if (lower.startsWith('cd ') && lower.length > 3) {
+                const arg = lower.slice(3)
+                const node = this.getNode(this.cwd)
+                if (node && node.children) {
+                    const matches = Object.entries(node.children)
+                        .filter(([name, n]) => n.type === 'dir' && name.startsWith(arg))
+                        .map(([name]) => name)
+                    return matches.length === 1 ? matches[0].slice(arg.length) : ''
+                }
+                return ''
+            }
+
+            if (lower.startsWith('cat ') && lower.length > 4) {
+                const arg = lower.slice(4)
+                const node = this.getNode(this.cwd)
+                if (node && node.children) {
+                    const matches = Object.keys(node.children).filter(n => n.startsWith(arg))
+                    return matches.length === 1 ? matches[0].slice(arg.length) : ''
+                }
+                return ''
+            }
+
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'date', 'grep', 'search', 'pwd', 'ls', 'cd', 'cat']
             const matches = allCommands.filter(c => c.startsWith(lower) && c !== lower)
             return matches.length === 1 ? matches[0].slice(lower.length) : ''
         }
@@ -577,7 +672,7 @@ export default {
             const cmd = this.current.trim().toLowerCase()
             if (!cmd) return
 
-            this.output.push({ prompt: true, text: cmd, type: 'cmd' })
+            this.output.push({ prompt: true, text: cmd, type: 'cmd', promptCwd: this.cwdDisplay })
             this.history.unshift(cmd)
             localStorage.setItem('cmdHistory', JSON.stringify(this.history.slice(0, 50)))
             this.historyIndex = -1
@@ -589,7 +684,7 @@ export default {
                 await this.runCmdAnim('running help')
                 const lines = COMMANDS.help()
                 this.output.push({ text: lines[0], type: 'out' })
-                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'open', 'grep', 'skin', 'date', 'clear']
+                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'open', 'grep', 'skin', 'date', 'clear', 'pwd', 'ls', 'cd', 'cat']
                 const sid = ++this.selectionCounter
                 lines.slice(1).forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -698,6 +793,107 @@ export default {
                     }
                     this.output.push({ text: '', type: 'out' })
                 }
+            } else if (cmd === 'pwd') {
+                this.output.push({ text: this.cwd, type: 'out' })
+                this.output.push({ text: '', type: 'out' })
+            } else if (cmd === 'ls' || cmd.startsWith('ls ')) {
+                const lsParts = cmd.split(/\s+/).slice(1)
+                const lsFlags = lsParts.filter(p => p.startsWith('-')).join('').replace(/-/g, '')
+                const lsPathArg = lsParts.find(p => !p.startsWith('-'))
+                const showAll = lsFlags.includes('a')
+                const longFmt = lsFlags.includes('l')
+                const lsTarget = lsPathArg ? this.normalizePath(this.resolvePath(lsPathArg)) : this.cwd
+                const lsNode = this.getNode(lsTarget)
+                if (!lsNode) {
+                    this.output.push({ text: `ls: cannot access '${lsPathArg}': No such file or directory`, type: 'err' })
+                    this.output.push({ text: '', type: 'out' })
+                } else if (lsNode.type !== 'dir') {
+                    this.output.push({ text: lsPathArg, type: 'out' })
+                    this.output.push({ text: '', type: 'out' })
+                } else {
+                    const lsEntries = Object.entries(lsNode.children || {})
+                        .filter(([name]) => showAll || !name.startsWith('.'))
+                        .sort(([a, na], [b, nb]) => {
+                            if (na.type === nb.type) return a.localeCompare(b)
+                            return na.type === 'dir' ? -1 : 1
+                        })
+                    if (longFmt) {
+                        const d = new Date()
+                        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                        const dateStr = `${months[d.getMonth()]} ${String(d.getDate()).padStart(2, ' ')}`
+                        this.output.push({ text: `<span class="dim">total ${lsEntries.length}</span>`, type: 'out' })
+                        lsEntries.forEach(([name, n]) => {
+                            const isDir = n.type === 'dir'
+                            const perms = isDir ? 'drwxr-xr-x' : (n.exec ? '-rwxr-xr-x' : '-rw-r--r--')
+                            const display = isDir
+                                ? `<span class="accent">${name}/</span>`
+                                : (n.exec ? `<span class="prompt">${name}</span>` : name)
+                            this.output.push({ text: `<span class="dim">${perms}  martin  ${dateStr}  </span>${display}`, type: 'out' })
+                        })
+                    } else {
+                        const lsTokens = lsEntries.map(([name, n]) =>
+                            n.type === 'dir'
+                                ? `<span class="accent">${name}/</span>`
+                                : (n.exec ? `<span class="prompt">${name}</span>` : name)
+                        )
+                        if (lsTokens.length) this.output.push({ text: lsTokens.join('  '), type: 'out' })
+                    }
+                    this.output.push({ text: '', type: 'out' })
+                }
+            } else if (cmd === 'cd' || cmd.startsWith('cd ')) {
+                const cdArg = cmd === 'cd' ? '~' : cmd.slice(3).trim()
+                const cdTarget = this.normalizePath(this.resolvePath(cdArg))
+                const cdNode = this.getNode(cdTarget)
+                if (!cdNode) {
+                    this.output.push({ text: `cd: ${cdArg}: No such file or directory`, type: 'err' })
+                    this.output.push({ text: '', type: 'out' })
+                } else if (cdNode.type !== 'dir') {
+                    this.output.push({ text: `cd: ${cdArg}: Not a directory`, type: 'err' })
+                    this.output.push({ text: '', type: 'out' })
+                } else {
+                    this.cwd = cdTarget
+                }
+            } else if (cmd.startsWith('cat ')) {
+                const catArg = cmd.slice(4).trim()
+                if (!catArg) {
+                    this.output.push({ text: 'usage: cat &lt;file&gt;', type: 'err' })
+                    this.output.push({ text: '', type: 'out' })
+                } else {
+                    const catTarget = this.normalizePath(this.resolvePath(catArg))
+                    const catNode = this.getNode(catTarget)
+                    if (!catNode) {
+                        this.output.push({ text: `cat: ${catArg}: No such file or directory`, type: 'err' })
+                        this.output.push({ text: '', type: 'out' })
+                    } else if (catNode.type === 'dir') {
+                        this.output.push({ text: `cat: ${catArg}: Is a directory`, type: 'err' })
+                        this.output.push({ text: '', type: 'out' })
+                    } else {
+                        catNode.content.split('\n').forEach(l => this.output.push({ text: l || '', type: 'out' }))
+                        this.output.push({ text: '', type: 'out' })
+                    }
+                }
+            } else if (cmd.startsWith('./') || /^(bash|sh) /.test(cmd)) {
+                let scriptName, extraArg
+                if (cmd.startsWith('./')) {
+                    const shParts = cmd.slice(2).split(/\s+/)
+                    scriptName = shParts[0]; extraArg = shParts.slice(1).join(' ')
+                } else {
+                    const shParts = cmd.replace(/^(bash|sh) /, '').split(/\s+/)
+                    scriptName = shParts[0]; extraArg = shParts.slice(1).join(' ')
+                }
+                const shTarget = this.normalizePath(this.resolvePath(scriptName))
+                const shNode = this.getNode(shTarget)
+                if (!shNode || shNode.type !== 'file') {
+                    this.output.push({ text: `bash: ${scriptName}: No such file or directory`, type: 'err' })
+                    this.output.push({ text: '', type: 'out' })
+                } else if (!shNode.exec) {
+                    this.output.push({ text: `bash: ${scriptName}: Permission denied`, type: 'err' })
+                    this.output.push({ text: '', type: 'out' })
+                } else {
+                    const execCmd = extraArg ? `${shNode.exec} ${extraArg}` : shNode.exec
+                    this.output.push({ text: `<span class="dim">▸ running ${scriptName}...</span>`, type: 'out' })
+                    await this.runScript(execCmd)
+                }
             } else if (COMMANDS[cmd]) {
                 await this.runCmdAnim(`running ${cmd}`)
                 const lines = COMMANDS[cmd]()
@@ -785,6 +981,46 @@ export default {
                 return
             }
 
+            // cd <dir> sub-completion
+            if (cmd === 'cd ' || (cmd.startsWith('cd ') && cmd.length > 3)) {
+                const arg = cmd.slice(3)
+                const node = this.getNode(this.cwd)
+                const dirNames = node && node.children
+                    ? Object.entries(node.children).filter(([, n]) => n.type === 'dir').map(([name]) => name)
+                    : []
+                const matches = arg === '' ? dirNames : dirNames.filter(n => n.startsWith(arg))
+                if (!matches.length) return
+                if (matches.length === 1) { this.current = `cd ${matches[0]}`; return }
+                const prefix = matches.reduce((acc, n) => {
+                    let i = 0
+                    while (i < acc.length && i < n.length && acc[i] === n[i]) i++
+                    return acc.slice(0, i)
+                })
+                if (prefix.length > arg.length) { this.current = `cd ${prefix}`; return }
+                this.output.push({ text: matches.map(m => `<span class="accent">${m}/</span>`).join('    '), type: 'out' })
+                this.$nextTick(() => { this.$refs.body.scrollTop = this.$refs.body.scrollHeight })
+                return
+            }
+
+            // cat <file> sub-completion
+            if (cmd === 'cat ' || (cmd.startsWith('cat ') && cmd.length > 4)) {
+                const arg = cmd.slice(4)
+                const node = this.getNode(this.cwd)
+                const fileNames = node && node.children ? Object.keys(node.children) : []
+                const matches = arg === '' ? fileNames : fileNames.filter(n => n.startsWith(arg))
+                if (!matches.length) return
+                if (matches.length === 1) { this.current = `cat ${matches[0]}`; return }
+                const prefix = matches.reduce((acc, n) => {
+                    let i = 0
+                    while (i < acc.length && i < n.length && acc[i] === n[i]) i++
+                    return acc.slice(0, i)
+                })
+                if (prefix.length > arg.length) { this.current = `cat ${prefix}`; return }
+                this.output.push({ text: matches.map(m => `<span class="accent">${m}</span>`).join('    '), type: 'out' })
+                this.$nextTick(() => { this.$refs.body.scrollTop = this.$refs.body.scrollHeight })
+                return
+            }
+
             // skin <name> sub-completion
             if (cmd === 'skin ' || (cmd.startsWith('skin ') && cmd.length > 5)) {
                 const arg = cmd.slice(5)
@@ -814,7 +1050,7 @@ export default {
                 return
             }
 
-            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'date', 'grep', 'search']
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'date', 'grep', 'search', 'pwd', 'ls', 'cd', 'cat']
             const matches = cmd === '' ? allCommands : allCommands.filter(c => c.startsWith(cmd))
 
             if (matches.length === 0) return
@@ -837,6 +1073,81 @@ export default {
 
             this.output.push({ text: matches.map(m => `<span class="accent">${m}</span>`).join('    '), type: 'out' })
             this.$nextTick(() => { this.$refs.body.scrollTop = this.$refs.body.scrollHeight })
+        },
+        normalizePath (path) {
+            const parts = path.split('/').filter(Boolean)
+            const stack = []
+            for (const p of parts) {
+                if (p === '..') { if (stack.length) stack.pop() }
+                else if (p !== '.') stack.push(p)
+            }
+            return '/' + stack.join('/')
+        },
+        resolvePath (input) {
+            if (!input || input === '~') return HOME
+            if (input.startsWith('~/')) return HOME + '/' + input.slice(2)
+            if (input.startsWith('/')) return input
+            const base = this.cwd === '/' ? '' : this.cwd
+            return base + '/' + input
+        },
+        getNode (path) {
+            const norm = this.normalizePath(path)
+            if (norm === '/') return FS['/']
+            const parts = norm.split('/').filter(Boolean)
+            let node = FS['/']
+            for (const p of parts) {
+                if (!node || !node.children || !node.children[p]) return null
+                node = node.children[p]
+            }
+            return node
+        },
+        async runScript (execCmd) {
+            if (execCmd === 'about' || execCmd === 'skills' || execCmd === 'education') {
+                await this.runCmdAnim(`running ${execCmd}`)
+                await this.typewriteLines(COMMANDS[execCmd]())
+            } else if (execCmd === 'cv') {
+                await this.runCmdAnim('running cv')
+                await this.revealByGroup(renderCv())
+            } else if (execCmd === 'links') {
+                await this.runCmdAnim('running links')
+                const sid = ++this.selectionCounter
+                renderLinks().forEach((text, i) => {
+                    this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
+                    this.output.push({ text: '<span class="entry-gap"></span>', type: 'out' })
+                })
+                this.output.push({ text: '', type: 'out' })
+                this.enterSelection(DATA.links.map(l => ({ label: l.label, sublabel: l.value, url: l.url, external: true })), sid)
+            } else if (execCmd === 'projects') {
+                await this.runCmdAnim('running projects')
+                const sid = ++this.selectionCounter
+                renderProjects().forEach((text, i) => {
+                    this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
+                    this.output.push({ text: '<span class="entry-gap"></span>', type: 'out' })
+                })
+                this.output.push({ text: '', type: 'out' })
+                this.enterSelection(DATA.projects.map(p => ({ label: p.name, sublabel: p.desc, url: p.url, external: !!p.external })), sid)
+            } else if (execCmd === 'open' || execCmd.startsWith('open ')) {
+                const arg = execCmd === 'open' ? '' : execCmd.slice(5).trim()
+                if (!arg) {
+                    this.output.push({ text: 'usage: ./open.sh &lt;project-name&gt;', type: 'err' })
+                    this.output.push({ text: 'e.g.  ./open.sh ghosting', type: 'out' })
+                    this.output.push({ text: '', type: 'out' })
+                } else {
+                    const project = DATA.projects.find(p => p.name === arg)
+                    if (project) {
+                        const url = project.url.startsWith('//') ? 'https:' + project.url : project.url
+                        if (project.external || project.url.startsWith('//')) {
+                            window.open(url, '_blank', 'noopener,noreferrer')
+                        } else {
+                            window.location.href = url
+                        }
+                    } else {
+                        this.output.push({ text: `project not found: ${arg}`, type: 'err' })
+                        this.output.push({ text: `try: ${DATA.projects.map(p => p.name).join(', ')}`, type: 'out' })
+                        this.output.push({ text: '', type: 'out' })
+                    }
+                }
+            }
         },
         historyUp () {
             if (this.selection.active) {
@@ -1105,6 +1416,10 @@ export default {
     color: var(--t-prompt);
     flex-shrink: 0;
     transition: color 0.25s;
+}
+
+.prompt-cwd {
+    color: var(--t-dim);
 }
 
 .typed {
