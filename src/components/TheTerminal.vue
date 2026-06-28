@@ -1140,6 +1140,7 @@ export default {
     opacity: 0.45;
     pointer-events: none;
     white-space: pre;
+    margin-left: -8px; // cursor width — ghost starts at cursor position
 }
 
 .hidden-input {
