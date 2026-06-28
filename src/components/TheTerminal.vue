@@ -287,7 +287,6 @@ const COMMANDS = {
             '<span class="accent">open</span>         — open a project  <span class="dim">e.g. open ghosting</span>',
             '<span class="accent">grep</span>         — search all content  <span class="dim">e.g. grep vue</span>',
             '<span class="accent">skin</span>         — change the terminal skin',
-            '<span class="accent">history</span>      — command history',
             '<span class="accent">date</span>         — show current date &amp; time',
             '<span class="accent">clear</span>        — clear the terminal',
         ]
@@ -392,7 +391,7 @@ export default {
                 return matches.length === 1 ? matches[0].slice(arg.length) : ''
             }
 
-            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'history', 'date', 'grep', 'search']
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'date', 'grep', 'search']
             const matches = allCommands.filter(c => c.startsWith(lower) && c !== lower)
             return matches.length === 1 ? matches[0].slice(lower.length) : ''
         }
@@ -590,7 +589,7 @@ export default {
                 await this.runCmdAnim('running help')
                 const lines = COMMANDS.help()
                 this.output.push({ text: lines[0], type: 'out' })
-                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'open', 'grep', 'skin', 'history', 'date', 'clear']
+                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'open', 'grep', 'skin', 'date', 'clear']
                 const sid = ++this.selectionCounter
                 lines.slice(1).forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -646,17 +645,6 @@ export default {
             } else if (cmd === 'cv') {
                 await this.runCmdAnim('running cv')
                 await this.revealByGroup(renderCv())
-            } else if (cmd === 'history') {
-                await this.runCmdAnim('loading history')
-                const hist = this.history.filter(h => h !== 'history')
-                if (!hist.length) {
-                    this.output.push({ text: 'no history yet', type: 'dim' })
-                } else {
-                    ;[...hist].reverse().forEach((entry, i) => {
-                        this.output.push({ text: `<span class="dim">${String(i + 1).padStart(3)}  </span>${entry}`, type: 'out' })
-                    })
-                }
-                this.output.push({ text: '', type: 'out' })
             } else if (cmd === 'date') {
                 const now = new Date()
                 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -826,7 +814,7 @@ export default {
                 return
             }
 
-            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'history', 'date', 'grep', 'search']
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'open', 'clear', 'date', 'grep', 'search']
             const matches = cmd === '' ? allCommands : allCommands.filter(c => c.startsWith(cmd))
 
             if (matches.length === 0) return
