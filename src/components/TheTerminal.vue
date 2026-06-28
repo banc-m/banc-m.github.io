@@ -1,16 +1,11 @@
 <template>
     <div class="terminal-wrap px-3" @click="focusInput">
-        <div :class="['terminal', { 'terminal--light': theme === 'light' }]">
+        <div :class="['terminal', skinClass]">
             <div class="terminal-bar">
                 <span class="dot dot-red"></span>
                 <span class="dot dot-yellow"></span>
                 <span class="dot dot-green"></span>
                 <span class="bar-title">Martin Stewart <span class="title-dash">—</span><br class="title-break"> web designer &amp; developer</span>
-                <button class="theme-toggle" @click.stop="toggleTheme" :class="{ 'is-light': theme === 'light' }" title="Toggle theme">
-                    <i class="fas fa-moon"></i>
-                    <span class="toggle-thumb"></span>
-                    <i class="fas fa-sun"></i>
-                </button>
             </div>
             <div class="terminal-body" ref="body">
                 <div class="line" v-for="(line, i) in output" :key="i">
@@ -93,6 +88,24 @@ const DATA = {
     ]
 }
 
+const SKINS = [
+    { name: 'dark',   desc: 'dark charcoal  — default' },
+    { name: 'light',  desc: 'warm cream' },
+    { name: 'matrix', desc: 'green on black' },
+    { name: 'amber',  desc: 'retro CRT amber' },
+    { name: 'nord',   desc: 'cool nordic blues' },
+]
+
+function getInitialSkin () {
+    // Migrate from old 'theme' key
+    const legacy = localStorage.getItem('theme')
+    if (legacy) {
+        localStorage.setItem('skin', legacy)
+        localStorage.removeItem('theme')
+    }
+    return localStorage.getItem('skin') || 'dark'
+}
+
 function renderCv () {
     const lines = []
     DATA.cv.forEach(e => {
@@ -141,6 +154,13 @@ function renderLinks () {
     )
 }
 
+function renderSkins (currentSkin) {
+    return SKINS.map(s => {
+        const active = s.name === currentSkin ? ' <span class="dim">(active)</span>' : ''
+        return `<span class="accent">${s.name}</span>  <span class="dim">${s.desc}</span>${active}`
+    })
+}
+
 const COMMANDS = {
     help () {
         return [
@@ -151,6 +171,7 @@ const COMMANDS = {
             '<span class="accent">education</span>    — academic background',
             '<span class="accent">projects</span>     — things I\'ve built',
             '<span class="accent">links</span>        — profiles &amp; socials',
+            '<span class="accent">skin</span>         — change the terminal skin',
             '<span class="accent">clear</span>        — clear the terminal',
         ]
     },
@@ -176,7 +197,7 @@ export default {
     name: 'TheTerminal',
     data () {
         return {
-            theme: localStorage.getItem('theme') || 'dark',
+            skin: getInitialSkin(),
             current: '',
             output: getWelcome().map(text => ({ text, type: 'info' })),
             history: [],
@@ -188,6 +209,9 @@ export default {
         }
     },
     computed: {
+        skinClass () {
+            return this.skin !== 'dark' ? `terminal--skin-${this.skin}` : ''
+        },
         selHint () {
             if (this.isTouch) return '<i class="fas fa-hand-pointer"></i> tap an item to open'
             const action = this.selection.items.length && this.selection.items[0].cmd ? 'run' : 'open'
@@ -196,7 +220,7 @@ export default {
     },
     mounted () {
         this.$nextTick(() => this.$refs.input.focus())
-        document.body.classList.toggle('theme-light', this.theme === 'light')
+        this.applySkin(this.skin)
         this._onWinBlur  = () => { this.focused = false }
         this._onWinFocus = () => { this.focused = true }
         this._onPageShow = (e) => {
@@ -218,11 +242,11 @@ export default {
         window.removeEventListener('pageshow', this._onPageShow)
     },
     methods: {
-        toggleTheme () {
-            this.theme = this.theme === 'dark' ? 'light' : 'dark'
-            localStorage.setItem('theme', this.theme)
-            document.body.classList.toggle('theme-light', this.theme === 'light')
-            this.$nextTick(() => this.$refs.input.focus())
+        applySkin (name) {
+            this.skin = name
+            localStorage.setItem('skin', name)
+            SKINS.forEach(s => document.body.classList.remove(`skin-${s.name}`))
+            if (name !== 'dark') document.body.classList.add(`skin-${name}`)
         },
         focusInput (e) {
             if (e.target.closest('a, button')) return
@@ -260,7 +284,7 @@ export default {
             } else if (cmd === 'help') {
                 const lines = COMMANDS.help()
                 this.output.push({ text: lines[0], type: 'out' })
-                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'clear']
+                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'skin', 'clear']
                 const sid = ++this.selectionCounter
                 lines.slice(1).forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
@@ -284,6 +308,28 @@ export default {
                 })
                 this.output.push({ text: '', type: 'out' })
                 this.enterSelection(DATA.links.map(l => ({ label: l.label, sublabel: l.value, url: l.url, external: true })), sid)
+            } else if (cmd === 'skin' || cmd.startsWith('skin ')) {
+                const arg = cmd === 'skin' ? '' : cmd.slice(5).trim()
+                if (arg) {
+                    const found = SKINS.find(s => s.name === arg)
+                    if (found) {
+                        this.applySkin(found.name)
+                        this.output.push({ text: `skin set to <span class="accent">${found.name}</span>`, type: 'out' })
+                        this.output.push({ text: '', type: 'out' })
+                    } else {
+                        this.output.push({ text: `unknown skin: ${arg}`, type: 'err' })
+                        this.output.push({ text: `available: ${SKINS.map(s => s.name).join(', ')}`, type: 'out' })
+                        this.output.push({ text: '', type: 'out' })
+                    }
+                } else {
+                    const sid = ++this.selectionCounter
+                    renderSkins(this.skin).forEach((text, i) => {
+                        this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
+                        this.output.push({ text: '<span class="entry-gap"></span>', type: 'out' })
+                    })
+                    this.output.push({ text: '', type: 'out' })
+                    this.enterSelection(SKINS.map(s => ({ label: s.name, cmd: `skin ${s.name}` })), sid)
+                }
             } else if (COMMANDS[cmd]) {
                 const lines = COMMANDS[cmd]()
                 lines.forEach(l => this.output.push({ text: l, type: 'out' }))
@@ -326,7 +372,7 @@ export default {
         },
         tabComplete () {
             const cmd = this.current.toLowerCase()
-            const allCommands = [...Object.keys(COMMANDS), 'clear']
+            const allCommands = [...Object.keys(COMMANDS), 'skin', 'clear']
             const matches = cmd === '' ? allCommands : allCommands.filter(c => c.startsWith(cmd))
 
             if (matches.length === 0) return
@@ -336,7 +382,6 @@ export default {
                 return
             }
 
-            // Complete to longest common prefix if it extends beyond what's typed
             const prefix = matches.reduce((acc, c) => {
                 let i = 0
                 while (i < acc.length && i < c.length && acc[i] === c[i]) i++
@@ -348,7 +393,6 @@ export default {
                 return
             }
 
-            // No further prefix — show all matches
             this.output.push({ text: matches.map(m => `<span class="accent">${m}</span>`).join('    '), type: 'out' })
             this.$nextTick(() => { this.$refs.body.scrollTop = this.$refs.body.scrollHeight })
         },
@@ -404,40 +448,93 @@ export default {
 }
 
 .terminal {
-    // Dark skin — all values verified ≥ 4.5:1 against #0d1117 (body) or bar bg
+    // dark skin (default)
     --t-bg:         #0d1117;
-    --t-bar-bg:     #13181f;                // bar sits slightly lighter than body
+    --t-bar-bg:     #13181f;
     --t-bar-border: #1e2530;
     --t-border:     #1e2530;
-    --t-text:       #dfdfdf;               // 14.4:1 ✓
-    --t-info:       #a3a8b0;               // 7.9:1 ✓
-    --t-title:      #8b9099;               // 5.9:1 on body / 5.3:1 on bar ✓
-    --t-prompt:     #28c840;               // 8.5:1 ✓
-    --t-accent:     #4a8fc4;               // 5.5:1 ✓  (was #376fa4 → 3.6:1 ✗)
-    --t-dim:        #8b9099;               // 5.9:1 ✓  (was rgba(…0.35) → 2.7:1 ✗)
-    --t-err:        #ff5f57;               // 6.4:1 ✓
-    --t-link:       #4a8fc4;               // 5.5:1 ✓
-    --t-link-hover: #6aafd8;               // 8.0:1 ✓
+    --t-text:       #dfdfdf;
+    --t-info:       #a3a8b0;
+    --t-title:      #8b9099;
+    --t-prompt:     #28c840;
+    --t-accent:     #4a8fc4;
+    --t-dim:        #8b9099;
+    --t-err:        #ff5f57;
+    --t-link:       #4a8fc4;
+    --t-link-hover: #6aafd8;
     --t-cursor:     #dfdfdf;
     --t-scrollbar:  #2a3040;
 
-    &.terminal--light {
-        // Light skin — all values verified ≥ 4.5:1 against #f7f3ee (body) or bar bg
+    &.terminal--skin-light {
         --t-bg:         #f7f3ee;
-        --t-bar-bg:     #ede9e4;           // slightly darker than body
+        --t-bar-bg:     #ede9e4;
         --t-bar-border: #d8d3cd;
         --t-border:     #d8d3cd;
-        --t-text:       #2c2c2c;           // 12.5:1 ✓
-        --t-info:       #6a6a6a;           // 4.9:1 ✓  (was rgba(…0.65) → 4.4:1 ✗)
-        --t-title:      #666666;           // 4.8:1 on bar ✓  (was rgba(…0.4) → 2.3:1 ✗)
-        --t-prompt:     #2a7437;           // 5.2:1 ✓
-        --t-accent:     #1a5f8a;           // 6.2:1 ✓
-        --t-dim:        #6e6e6e;           // 4.6:1 ✓  (was rgba(…0.4) → 2.3:1 ✗)
-        --t-err:        #c0392b;           // 4.9:1 ✓
-        --t-link:       #1a5f8a;           // 6.2:1 ✓
-        --t-link-hover: #2471a3;           // 4.8:1 ✓
+        --t-text:       #2c2c2c;
+        --t-info:       #6a6a6a;
+        --t-title:      #666666;
+        --t-prompt:     #2a7437;
+        --t-accent:     #1a5f8a;
+        --t-dim:        #6e6e6e;
+        --t-err:        #c0392b;
+        --t-link:       #1a5f8a;
+        --t-link-hover: #2471a3;
         --t-cursor:     #2c2c2c;
         --t-scrollbar:  #c8c3bd;
+    }
+
+    &.terminal--skin-matrix {
+        --t-bg:         #020d02;
+        --t-bar-bg:     #051205;
+        --t-bar-border: #0d2e0d;
+        --t-border:     #0d2e0d;
+        --t-text:       #39ff14;
+        --t-info:       #22cc00;
+        --t-title:      #1a9900;
+        --t-prompt:     #00ff41;
+        --t-accent:     #00ff41;
+        --t-dim:        #228b22;
+        --t-err:        #ff4444;
+        --t-link:       #00ff41;
+        --t-link-hover: #66ff66;
+        --t-cursor:     #39ff14;
+        --t-scrollbar:  #0a3a0a;
+    }
+
+    &.terminal--skin-amber {
+        --t-bg:         #0c0700;
+        --t-bar-bg:     #140b00;
+        --t-bar-border: #2e1800;
+        --t-border:     #2e1800;
+        --t-text:       #ffb000;
+        --t-info:       #cc8a00;
+        --t-title:      #996500;
+        --t-prompt:     #ffd000;
+        --t-accent:     #ffd000;
+        --t-dim:        #8a6000;
+        --t-err:        #ff4422;
+        --t-link:       #ffd000;
+        --t-link-hover: #ffe566;
+        --t-cursor:     #ffb000;
+        --t-scrollbar:  #2e1800;
+    }
+
+    &.terminal--skin-nord {
+        --t-bg:         #2e3440;
+        --t-bar-bg:     #262b38;
+        --t-bar-border: #3b4252;
+        --t-border:     #3b4252;
+        --t-text:       #eceff4;
+        --t-info:       #d8dee9;
+        --t-title:      #9099a8;
+        --t-prompt:     #a3be8c;
+        --t-accent:     #88c0d0;
+        --t-dim:        #616e88;
+        --t-err:        #bf616a;
+        --t-link:       #88c0d0;
+        --t-link-hover: #8fbcbb;
+        --t-cursor:     #eceff4;
+        --t-scrollbar:  #3b4252;
     }
 
     display: flex;
@@ -490,51 +587,6 @@ export default {
     @media (min-width: 541px) {
         .title-dash { display: inline; }
     }
-}
-
-.theme-toggle {
-    position: relative;
-    display: flex;
-    align-items: center;
-    background: var(--t-bg);
-    border: 1px solid var(--t-bar-border);
-    border-radius: 999px;
-    padding: 3px;
-    cursor: pointer;
-    transition: border-color 0.25s, background 0.25s;
-
-    i {
-        width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.65rem;
-        position: relative;
-        z-index: 1;
-        transition: color 0.25s;
-    }
-
-    .fa-moon { color: var(--t-bg); }
-    .fa-sun  { color: var(--t-dim); }
-
-    .toggle-thumb {
-        position: absolute;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--t-text);
-        left: 3px;
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
-    }
-
-    &.is-light {
-        .toggle-thumb { transform: translateX(18px); }
-        .fa-moon { color: var(--t-dim); }
-        .fa-sun  { color: var(--t-bg); }
-    }
-
-    &:hover { border-color: var(--t-dim); }
 }
 
 .terminal-body {
