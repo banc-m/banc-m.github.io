@@ -168,7 +168,7 @@ function renderProjects () {
 }
 
 function renderAbout () {
-    return ['Hello, my name is Martin! I\'m a Web Designer and Developer with a passion for designing and building websites and apps. I\'ve worked across commercial and public sector organisations, and outside of work I\'m a keen photographer and squash player.']
+    return ['Hello, my name is Martin. I\'m a Web Designer and Developer with a passion for designing and building websites and apps. I\'ve worked across commercial and public sector organisations, and outside of work I\'m a keen photographer and squash player. ;-)']
 }
 
 function renderLinks () {
@@ -182,6 +182,42 @@ function renderSkins (currentSkin) {
         const active = s.name === currentSkin ? ' <span class="dim">(active)</span>' : ''
         return `<span class="accent">${s.name}</span>  <span class="dim">${s.desc}</span>${active}`
     })
+}
+
+function countVisibleChars (html) {
+    let count = 0
+    let i = 0
+    while (i < html.length) {
+        if (html[i] === '<') { i = html.indexOf('>', i) + 1; continue }
+        if (html[i] === '&') {
+            const end = html.indexOf(';', i)
+            i = (end !== -1 && end - i <= 8) ? end + 1 : i + 1
+        } else { i++ }
+        count++
+    }
+    return count
+}
+
+function revealHtml (html, visibleCount) {
+    let visible = 0
+    let result = ''
+    let i = 0
+    while (i < html.length && visible < visibleCount) {
+        if (html[i] === '<') {
+            const end = html.indexOf('>', i)
+            result += end !== -1 ? html.slice(i, end + 1) : html[i]
+            i = end !== -1 ? end + 1 : i + 1
+        } else if (html[i] === '&') {
+            const end = html.indexOf(';', i)
+            if (end !== -1 && end - i <= 8) {
+                result += html.slice(i, end + 1); i = end + 1
+            } else { result += html[i]; i++ }
+            visible++
+        } else {
+            result += html[i++]; visible++
+        }
+    }
+    return result
 }
 
 const COMMANDS = {
@@ -235,6 +271,8 @@ export default {
             bootSpinnerFrame: 0,
             bootReady: false,
             cmdAnim: { active: false, label: '', progress: 0, spinnerFrame: 0 },
+            typewriterActive: false,
+            typewriterAbort: false,
             current: '',
             output: getWelcome().map(text => ({ text, type: 'info' })),
             history: [],
@@ -297,6 +335,50 @@ export default {
         window.removeEventListener('pageshow', this._onPageShow)
     },
     methods: {
+        async typewriteLines (lines) {
+            this.typewriterActive = true
+            const delay = ms => new Promise(r => setTimeout(r, ms))
+            const CHARS_PER_TICK = 2
+            const TICK = 18
+
+            outer: for (let li = 0; li < lines.length; li++) {
+                const raw = lines[li]
+
+                if (this.typewriterAbort) {
+                    for (let r = li; r < lines.length; r++) this.output.push({ text: lines[r], type: 'out' })
+                    break
+                }
+
+                if (!raw || raw === '<span class="entry-gap"></span>') {
+                    this.output.push({ text: raw, type: 'out' })
+                    if (!this.typewriterAbort) await delay(30)
+                    continue
+                }
+
+                const total = countVisibleChars(raw)
+                this.output.push({ text: '', type: 'out' })
+                const idx = this.output.length - 1
+
+                for (let v = CHARS_PER_TICK; v < total; v += CHARS_PER_TICK) {
+                    if (this.typewriterAbort) {
+                        this.output[idx].text = raw
+                        for (let r = li + 1; r < lines.length; r++) this.output.push({ text: lines[r], type: 'out' })
+                        break outer
+                    }
+                    await delay(TICK)
+                    this.output[idx].text = revealHtml(raw, v)
+                    if (v % 8 === 0) this.$nextTick(() => { const b = this.$refs.body; if (b) b.scrollTop = b.scrollHeight })
+                }
+
+                this.output[idx].text = raw
+                if (!this.typewriterAbort) await delay(50)
+            }
+
+            this.output.push({ text: '', type: 'out' })
+            this.typewriterActive = false
+            this.typewriterAbort = false
+            this.$nextTick(() => { const b = this.$refs.body; if (b) b.scrollTop = b.scrollHeight })
+        },
         async runCmdAnim (label) {
             const delay = ms => new Promise(r => setTimeout(r, ms))
             this.cmdAnim = { active: true, label, progress: 0, spinnerFrame: 0 }
@@ -369,6 +451,14 @@ export default {
                 return
             }
 
+            // Interrupt any running typewriter before processing the new command
+            if (this.typewriterActive) {
+                this.typewriterAbort = true
+                await new Promise(resolve => {
+                    const poll = setInterval(() => { if (!this.typewriterActive) { clearInterval(poll); resolve() } }, 10)
+                })
+            }
+
             const cmd = this.current.trim().toLowerCase()
             if (!cmd) return
 
@@ -433,6 +523,9 @@ export default {
                     this.output.push({ text: '', type: 'out' })
                     this.enterSelection(SKINS.map(s => ({ label: s.name, cmd: `skin ${s.name}` })), sid)
                 }
+            } else if (cmd === 'about' || cmd === 'skills' || cmd === 'education') {
+                await this.runCmdAnim(`running ${cmd}`)
+                await this.typewriteLines(COMMANDS[cmd]())
             } else if (COMMANDS[cmd]) {
                 await this.runCmdAnim(`running ${cmd}`)
                 const lines = COMMANDS[cmd]()
