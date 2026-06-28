@@ -10,11 +10,9 @@
             <div class="terminal-body" ref="body">
                 <div v-if="loading" class="boot-screen">
                     <div class="boot-logo">
-                        <div>█   █  █   █  █   █  █   █   ███ </div>
-                        <div>██  █  █   █  █   █  ██ ██  █   █</div>
-                        <div>█ █ █  █   █  █   █  █ █ █  █   █</div>
-                        <div>█  ██  █   █   █ █   █   █  █   █</div>
-                        <div>█   █   ███     █    █   █   ███ </div>
+                        <div class="logo-row" v-for="(row, ri) in bootLogo" :key="ri">
+                            <span v-for="(px, pi) in row" :key="pi" :class="['logo-px', { 'logo-px--on': px }]"></span>
+                        </div>
                     </div>
                     <div class="boot-header">NUVMO TERMINAL <span class="boot-ver">v1.0.0</span></div>
                     <div class="boot-sep">────────────────────────────────────────</div>
@@ -330,6 +328,13 @@ export default {
             bootProgress: 0,
             bootSpinnerFrame: 0,
             bootReady: false,
+            bootLogo: [
+                [1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,0,1,1,1,0],
+                [1,1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,1],
+                [1,0,1,0,1,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,1,0,1,0,0,1,0,0,0,1],
+                [1,0,0,1,1,0,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,0,1,0,0,0,1],
+                [1,0,0,0,1,0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,1,1,0],
+            ],
             cmdAnim: { active: false, label: '', progress: 0, spinnerFrame: 0 },
             typewriterActive: false,
             typewriterAbort: false,
@@ -1184,12 +1189,23 @@ export default {
 }
 
 .boot-logo {
-    color: var(--t-accent);
-    font-size: 0.72rem;
-    line-height: 1.45;
-    letter-spacing: 0;
-    margin-bottom: 6px;
-    white-space: pre;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 10px;
+}
+
+.logo-row {
+    display: flex;
+    gap: 2px;
+}
+
+.logo-px {
+    width: 6px;
+    height: 5px;
+    flex-shrink: 0;
+
+    &--on { background: var(--t-accent); transition: background 0.25s; }
 }
 
 .boot-header {
