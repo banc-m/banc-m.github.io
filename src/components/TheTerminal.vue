@@ -23,7 +23,7 @@
                             <span v-for="(px, pi) in row" :key="pi" :class="['logo-px', { 'logo-px--on': px }]"></span>
                         </div>
                     </div>
-                    <div class="boot-header">NUVMO TERMINAL <span class="boot-ver">v1.0.0</span></div>
+                    <div class="boot-header">NUVMO TERMINAL 9000 <span class="boot-ver">[v1.0.0]</span></div>
                     <div class="boot-sep">────────────────────────────────────────</div>
                     <div class="boot-item" v-for="(item, i) in bootItems.slice(0, bootVisibleCount)" :key="i">
                         <span class="boot-item-label">{{ item.label }}...</span>
@@ -164,7 +164,7 @@ const FS = {
                             },
                             '.profile': {
                                 type: 'file',
-                                content: `# ~/.profile\nexport USER=martin\nexport SHELL=/bin/bash\nexport EDITOR=vim\nexport PAGER=less\n\nalias ll='ls -la'\nalias cls='clear'\n\n# nuvmo terminal v1.0.0`
+                                content: `# ~/.profile\nexport USER=martin\nexport SHELL=/bin/bash\nexport EDITOR=vim\nexport PAGER=less\n\nalias ll='ls -la'\nalias cls='clear'\n\n# nuvmo terminal 9000 [v1.0.0]`
                             },
                             'about.sh': {
                                 type: 'file',
@@ -372,7 +372,7 @@ const COMMANDS = {
 
 function getWelcome () {
     return [
-        'Welcome to the NUVMO TERMINAL [v1.0.0], type <span class="accent">help</span> for available commands.',
+        'Welcome to the NUVMO TERMINAL 9000 [v1.0.0], type <span class="accent">help</span> for available commands.',
         ''
     ]
 }
