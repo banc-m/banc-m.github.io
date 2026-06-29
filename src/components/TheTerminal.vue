@@ -68,6 +68,9 @@
                 @keydown.up.prevent="historyUp"
                 @keydown.down.prevent="historyDown"
                 @keydown.escape.prevent="escapeKey"
+                @keydown.meta.k.prevent="clearTerminal"
+                @keydown.ctrl.l.prevent="clearTerminal"
+                @keydown.ctrl.k.prevent="clearTerminal"
                 @focus="focused = true"
                 @blur="focused = false"
                 autocomplete="off"
@@ -356,15 +359,7 @@ const COMMANDS = {
             '<span class="accent">education</span>    — academic background',
             '<span class="accent">projects</span>     — things I\'ve built',
             '<span class="accent">links</span>        — profiles &amp; socials',
-            '<span class="accent">open</span>         — open a project  <span class="dim">e.g. open ghosting</span>',
-            '<span class="accent">grep</span>         — search all content  <span class="dim">e.g. grep vue</span>',
             '<span class="accent">skin</span>         — change the terminal skin',
-            '<span class="accent">date</span>         — show current date &amp; time',
-            '<span class="accent">clear</span>        — clear the terminal',
-            '<span class="accent">pwd</span>          — print working directory',
-            '<span class="accent">ls</span>           — list directory contents  <span class="dim">e.g. ls -la</span>',
-            '<span class="accent">cd</span>           — change directory  <span class="dim">e.g. cd projects</span>',
-            '<span class="accent">cat</span>          — read a file  <span class="dim">e.g. cat readme</span>',
         ]
     },
     about: renderAbout,
@@ -376,11 +371,8 @@ const COMMANDS = {
 }
 
 function getWelcome () {
-    const touch = window.matchMedia('(pointer: coarse)').matches
     return [
-        touch
-            ? 'Type <span class="accent">help</span> for available commands.'
-            : 'Type <span class="accent">help</span> for available commands. Use <span class="accent">Tab</span> to autocomplete.',
+        'Welcome to the NUVMO TERMINAL (v1.0.0), type <span class="accent">help</span> for available commands.',
         ''
     ]
 }
@@ -923,6 +915,13 @@ export default {
         },
         exitSelection () {
             this.selection = { active: false, items: [], current: 0, id: 0 }
+            this.$nextTick(() => this.$refs.input.focus())
+        },
+        clearTerminal () {
+            this.typewriterAbort = true
+            this.cmdAnim = { active: false, label: '', progress: 0, spinnerFrame: 0 }
+            this.selection = { active: false, items: [], current: 0, id: 0 }
+            this.output = []
             this.$nextTick(() => this.$refs.input.focus())
         },
         openSelected () {
