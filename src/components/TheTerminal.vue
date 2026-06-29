@@ -918,7 +918,7 @@ export default {
             this.$nextTick(() => this.$refs.input.focus())
         },
         clearTerminal () {
-            this.typewriterAbort = true
+            if (this.typewriterActive) this.typewriterAbort = true
             this.cmdAnim = { active: false, label: '', progress: 0, spinnerFrame: 0 }
             this.selection = { active: false, items: [], current: 0, id: 0 }
             this.output = []
