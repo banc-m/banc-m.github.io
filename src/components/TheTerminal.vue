@@ -372,7 +372,7 @@ const COMMANDS = {
 
 function getWelcome () {
     return [
-        'Welcome to the NUVMO TERMINAL (v1.0.0), type <span class="accent">help</span> for available commands.',
+        'Welcome to the NUVMO TERMINAL [v1.0.0], type <span class="accent">help</span> for available commands.',
         ''
     ]
 }
