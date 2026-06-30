@@ -685,7 +685,7 @@ export default {
                 await this.runCmdAnim('running help')
                 const lines = COMMANDS.help()
                 this.output.push({ text: lines[0], type: 'out' })
-                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'open', 'grep', 'skin', 'date', 'clear', 'pwd', 'ls', 'cd', 'cat']
+                const cmdNames = ['about', 'cv', 'skills', 'education', 'projects', 'links', 'skin']
                 const sid = ++this.selectionCounter
                 lines.slice(1).forEach((text, i) => {
                     this.output.push({ text, type: 'out', selectable: true, selectIndex: i, selectionId: sid })
